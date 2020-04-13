@@ -1,0 +1,391 @@
+<html>
+<head>
+  <title>Prolific Study</title>
+
+  <!-- Add Firebase SDKs (software dev kit) from the CDN (content delivery network) -->
+  <!-- (in the <head> tag of your page, before other script tags)  -->
+  <!-- Do a partial import of products you need -->
+  <!-- Firebase core is always and must be first -->
+  <script src="/__/firebase/5.9.4/firebase-app.js"></script>
+  <!-- Add additional services that you want to use -->
+  <!-- Firebase Realtime Database -->
+  <script src="/__/firebase/5.9.4/firebase-database.js"></script>
+  <!-- Initialize Firebase -->
+  <script src="/__/firebase/init.js"></script>
+
+  <!-- Include the [jQuery library](http://jquery.com/), which helps you manipulate HTML elements from JS. -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- Include the cascading style sheet (CSS), which lets us separate style from content. This stylesheet is important because it defines the notion of a **slide** and also makes things look nicer, which subjects appreciate. It's worth looking at the [source code](style.html). -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<!-- The Prolific ID slide -->
+<div class="slide" id="getProlificId">
+  <div style="width: 500px; margin: 0 auto; text-align: center; background-color: #8C1516; padding: 20px 15px 10px 10px">
+    <img src="images/stanford.png" height="46" width="360" alt="Stanford University">
+  </div>
+  <p class='logo-text'>Stanford AAA Lab</p>
+  <div class="block-text">
+    <p>Hello! A few important notes before you begin:
+    <ul>
+    <li>Please switch off your phone/email/music so that you can focus on this study.</li>
+    <li>This study should be completed on a Desktop computer, not on a tablet or mobile device.</li>
+    <li><b>DO NOT</b> refresh the page during the study, or all of your progress will be lost.</li>
+    </ul>
+    <p>Thank you for your cooperation!</p>
+    <br>
+    <p>Please enter your Prolific ID here:</p>
+  </div>
+  <div style="text-align: center">
+    <form id="prolificIdForm" name="prolificIdForm" autocomplete="off"
+    onkeypress="return event.keyCode != 13;">
+      <input style="margin-left: 10px" id="prolificId" name="prolificId">
+      <div style="text-align: center">
+        <button type="button" onclick="this.blur(); experiment.instructions();">Next</button>
+        <!-- <button type="button" onclick="this.blur(); experiment.end();">Next</button> -->
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- The instructions slide for the latency assessment. -->
+<div class="slide" id="instructionsLatency">
+  <div style="width: 500px; margin: 0 auto; text-align: center; background-color: #8C1516; padding: 20px 15px 10px 10px">
+    <img src="images/stanford.png" height="46" width="360" alt="Stanford University">
+  </div>
+  <p class='logo-text'>Stanford AAA Lab</p>
+  <div class="block-text">
+  <p> In the following activity, you will proceed through 3 stages:
+    <ol>
+      <li>First, you will see 24 Swahili words paired with their English translations.</li>
+      <li>Then, you will be asked to study the 24 Swahili-English word pairs. The word pairs will be split into three sets of eight. You will be asked to use a different study strategy for each set.</li>
+      <li>Finally, you will be quizzed on all 24 Swahili-English word pairs. On the quiz, you will be given the Swahili word, and asked to type the English translation.</li>
+    </ol>
+    You will be reminded of these instructions along the way.
+  </p>
+  </div>
+  <!-- Button to start the experiment. <code>this.blur()</code> removes the focus from the button, if the user pressed the button by using the keyboard, rather than the mouse. -->
+  <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button>
+  <!-- <button type="button" onclick="this.blur(); experiment.assessmentStudyFraming();">Start</button> -->
+  <button type="button" onclick="this.blur(); experiment.end();">End</button>
+  <!-- <button type="button" onclick="this.blur(); experiment.assessmentChoiceFraming();">Start</button> -->
+  <!-- Legal blurb that we're to show. -->
+  <!-- <p class="block-text" id="legal">Legal information: By answering the following questions, you are participating in a study being performed by researchers in the Stanford School of Education. If you have questions about this research, please contact Katie Cheng at <a href="mailto://katiemc@stanford.edu">katiemc@stanford.edu</a>. You must be at least 18 years old to participate. Your participation in this research is voluntary. You may decline to answer any or all of the following questions. You may decline further participation, at any time, without adverse consequences. Your anonymity is assured; the researchers who have requested your participation will not receive any personal information about you.</p> -->
+</div>
+
+<!-- The instructions slide for the expt. -->
+<div class="slide" id="instructionsExpt">
+  <div style="width: 500px; margin: 0 auto; text-align: center; background-color: #8C1516; padding: 20px 15px 10px 10px">
+    <img src="images/stanford.png" height="46" width="360" alt="Stanford University">
+  </div>
+  <p class='logo-text'>Stanford AAA Lab</p>
+  <div class="block-text">
+  <p> Welcome! In the following activity, you will be asked to learn 40 Swahili words and their English translations. You will learn these words in two rounds, 20 words at a time. Each round has 3 phases:
+    <ol>
+      <li><b>Presentation phase:</b> You will be introduced to 20 Swahili words.</li>
+      <li><b>Learning phase:</b> You will study each Swahili word.</li>
+      <li><b>Quiz phase:</b> You will be quizzed on what you've learned. On the quiz, you will be shown the Swahili word, and asked to type the English translation.</li>
+    </ol>
+    In total, across the two halves, you will learn 40 Swahili words and their English translations.
+    <!-- <br><br> -->
+    <!-- To reward your best efforts during this activity, you have an opportunity to earn <b>bonus payments</b>. For each English translation you type correctly on the two quizzes, you will earn an additional <b>$0.05</b>. This means you can earn an additional <b>$2.00</b> in bonus payments. -->
+    <br><br>
+    You will be reminded of these instructions along the way. Let's get started!
+    <br><br>
+    By clicking the 'Start' button, you are indicating your consent to participate in this study. Please read the Research Consent, below.
+  </p>
+  </div>
+  <!-- Button to start the experiment. <code>this.blur()</code> removes the focus from the button, if the user pressed the button by using the keyboard, rather than the mouse. -->
+  <!-- <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button> -->
+  <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button>
+  <button type="button" onclick="this.blur(); experiment.doesNotConsent();">End</button>
+  <!-- <button type="button" onclick="this.blur(); experiment.assessmentChoiceFraming();">Start</button> -->
+  <!-- Legal blurb that we're to show. -->
+  <p class="block-text" id="legal"> <b>Research Consent:</b> 
+  <br>DESCRIPTION: You are invited to participate in a research study on people's behaviors while learning. We will collect data about how you click and interact with this website during the study. The data will only be used by us in ways that you agree to below. We will keep the data for approximately 10 years, after which point they will be destroyed. 
+  <br>RISKS AND BENEFITS: There are no foreseeable risks associated with this study. There are also no benefits other than the chance to learn some new material.  We cannot and do not guarantee or promise that you will receive any benefits from this study. 
+  <br>TIME INVOLVEMENT: The study should take approximately 20-30 minutes. 
+  <br>PAYMENTS: You will receive $2.20 for participation in this research<!-- , plus any additional bonus payments earned -->.
+  <br>SUBJECT RIGHTS: If you have read this form and have decided to participate in this project, please understand your participation is voluntary and you have the right to withdraw your consent or discontinue participation at any time without penalty. You have the right to refuse to answer particular questions. Your individual privacy will be maintained in all published and written data resulting from the study. We will only use and share the video data in ways that you agree to. 
+  <br>CONTACT INFORMATION:  For questions about the study, contact Katie Cheng at <a href="mailto://katiemc@stanford.edu">katiemc@stanford.edu</a> or 1-650-736-1514. 
+  <br>INDEPENDENT CONTACT:  If you are not satisfied with how this study is being conducted, or if you have any concerns, complaints, or general questions about the research or your rights as a participant, please contact the Stanford Institutional Review Board (IRB) to speak to someone independent of the research team at 1-650-723-2480 or toll free at 1-866-680-2906, or email at IRB2-Manager@lists.stanford.edu.  You can also write to the Stanford IRB, Stanford University, 3000 El Camino Real, Five Palo Alto Square, 4th Floor, Palo Alto, CA 94306.
+  <br><br>
+</p>
+</div>
+
+<!-- The generic slide for text instructions with a Next button. -->
+<div class="slide" id="textNext">
+  <div style="width: 500px; margin: 0 auto;">
+    <h1 id="instructionsHeader">{{}}</h1>
+  </div>
+  <p class="block-text" id="instructionsText1">{{}}</p>
+  <p class="block-text" id="instructionsText2">{{}}</p>
+  <div style="text-align: center">
+    <button type="button" id="nextButton">Next</button>
+  </div>
+</div>
+
+<!-- The study slide -->
+<div class="slide" id="study">
+  <div style="text-align: center">
+    <h1 class="wordpair" id="wordpair">{{}}</h1>
+  </div>
+  <div style="text-align: center"><span id="wait"> </span></div>
+</div>
+
+<!-- The occulder -->
+<!-- <div id="occluder" class="occluder"></div> -->
+
+<!-- The generate slide -->
+<div class="slide" id="generate">
+  <div style="text-align: center">
+    <form id="generatedForm" name="generatedForm" autocomplete="off" 
+      onkeypress="return event.keyCode != 13;">
+      <h1 class="wordpair" style="display: inline-block" id="swahili" name="swahili">{{}}</h1>
+      <input style="margin-left: 10px" id="generatedWord" name="generatedWord">
+    </form>
+    <h1 hidden class="wordpair" id="feedback">{{}}</h1>
+  </div>
+  <div style="text-align: center"><span id="wait2"> </span></div>
+</div>
+
+<!-- The restudy slide -->
+<div class="slide" id="restudy">
+  <div style="text-align: center">
+    <h1 class="wordpair" id="restudyWordpair">{{}}</h1>
+    <form id="restudiedForm" name="restudiedForm" autocomplete="off" 
+      onkeypress="return event.keyCode != 13;">
+      <h1 class="wordpair" style="display: inline-block" id="restudySwahili" name="restudySwahili">{{}}</h1>
+      <input style="margin-left: 10px" id="restudiedWord" name="restudiedWord">
+    </form>
+  </div>
+  <div style="text-align: center"><span id="wait3"> </span></div>
+</div>
+
+<!-- The test slide -->
+<div class="slide" id="test">
+  <div style="text-align: center">
+    <form id="testForm" name="testForm" autocomplete="off" 
+      onkeypress="return event.keyCode != 13;">
+      <h1 class="wordpair" style="display: inline-block" id="swahiliTest" name="swahiliTest">{{}}</h1>
+      <input style="margin-left: 10px" id="testedWord" name="testedWord">
+    </form>
+  </div>
+  <div style="text-align: center"><span id="wait4"> </span></div>
+</div>
+
+<!-- The prediction slide with a Next button. -->
+<div class="slide" id="predictNext">
+  <div style="width: 500px; margin: 0 auto;">
+    <h1>Predict: How much did you learn?</h1>
+    <form id="predictionForm" name="predictionForm" autocomplete="off"
+      onkeypress="return event.keyCode != 13;">
+      <p id="firstPredictionText" class="block-text">{{}}</p>
+      <input id="firstPrediction" name="firstPrediction" type="number" min="0" max="10" required>
+      <p class="denominator" style="display:inline"></p>
+      <br><br>
+      <p class="block-text">Why did you make this prediction?</p>
+      <textarea id="firstPredictionReason" name="firstPredictionReason" rows="5" style="width: 500px"></textarea>
+      <br><br>
+      <p id="secondPredictionText" class="block-text">{{}}</p>
+      <input id="secondPrediction" name="secondPrediction" type="number" min="0" max="10" required>
+      <p class="denominator" style="display:inline"></p>
+      <br><br>
+      <p class="block-text">Why did you make this prediction?</p>
+      <textarea id="secondPredictionReason" name="secondPredictionReason" rows="5" style="width: 500px"></textarea>
+      <div style="text-align: center">
+        <button type="button" id="predictNextButton">Next</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- The feedback slide with a Next button. -->
+<div class="slide" id="feedbackNext">
+  <div style="width: 500px; margin: 0 auto;">
+    <h1 id="feedbackHeader">Quiz Results</h1>
+  </div>
+  <div><p class="block-text" id="feedbackText">{{}}</p></div>
+  <br>
+  <div><p class="block-text" id="firstFeedbackText">{{}}</p></div>
+  <br>
+  <div><p class="block-text" id="secondFeedbackText">{{}}</p></div>
+  <br>
+  <div style="text-align: center">
+    <button type="button" id="feedbackNextButton">Next</button>
+  </div>
+</div>
+
+<!-- The feedback surprise slide with a Next button -->
+<div class="slide" id="feedbackSurpriseNext">
+  <div style="width: 500px; margin: 0 auto;">
+    <h1 id="feedbackSurpriseHeader">Quiz Results</h1>
+    <form id="feedbackSurpriseForm" name="feedbackSurpriseForm" autocomplete="off"
+      onkeypress="return event.keyCode != 13;">
+      <p>Was there anything surprising about your Quiz Results? Please elaborate:</p>
+      <textarea id="feedbackSurprise" name="feedbackSurprise" rows="5" style="width: 500px"></textarea>
+      <br>
+      <div style="text-align: center">
+        <button type="button" id="feedbackSurpriseNextButton">Next</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TODO The choice slide with Restudy and Generate buttons. -->
+<div class="slide" id="choiceRG">
+  <div style="width: 500px; margin: 0 auto;">
+    <h1 id="instructionsHeader">Choose a study strategy</h1>
+  </div>
+  <p class="block-text" id="instructionsText1">How would you like to study the next item?</p>
+  <div style="text-align: center">
+    <button type="button" id="choiceButton1">{{}}</button>
+    <button type="button" id="choiceButton2">{{}}</button>
+  </div>
+</div>
+
+<!-- The choice slide with See Translation button. -->
+<div class="slide" id="choiceSeeTranslation">
+  <div style="text-align: center">
+    <h1 class="wordpair" id="swahiliCue" style="display:inline-block">{{}}</h1>
+    <h1 class="wordpair" id="englishAnswer" style="display:inline-block">{{}}</h1>
+    <br>
+    <div style="text-align: center">
+      <button type="button" id="seeTranslation">See Translation</button>
+    </div>
+  </div>
+</div>
+
+<!-- The choice slide with See Translation button. -->
+<div class="slide" id="choiceNextWordPair">
+  <div style="text-align: center">
+    <h1 class="wordpair" id="swahiliCue2" style="display:inline-block">{{}}</h1>
+    <h1 class="wordpair" id="englishAnswer2" style="display:inline-block">{{}}</h1>
+    <br>
+    <div style="text-align: center">
+      <button type="button" id="nextWordPair">Move On</button>
+    </div>
+  </div>
+</div>
+
+<!-- The questionnaire slide. -->
+<div class="slide" id="questionnaire">
+  <div class="block-text">
+    <h1>Tell us about your experience</h1>
+    <p> Great work. Finally, we'll ask you a few questions about your experience with the study. Please be honest. Your responses to the following questions will not affect your participation or compensation.</p><br>
+    <form id="questionnaireForm" name="questionnaireForm" autocomplete="off"
+      onkeypress="return event.keyCode != 13;">
+
+      <h2>Question 1</h2>
+      <p id="firstReminderText" class="block-text">{{}}</p>
+      <p><b>1a. </b><span id="firstEffectiveText" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q1a" value="extremely">Extremely effective<br>
+      <input type="radio" name="Q1a" value="very">Very effective<br>
+      <input type="radio" name="Q1a" value="moderately">Moderately effective<br>
+      <input type="radio" name="Q1a" value="slightly">Slightly effective<br>
+      <input type="radio" name="Q1a" value="not">Not at all effective<br>
+      <br>
+      <p><b>1b. </b><span id="firstEffortText" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q1b" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q1b" value="alot">A lot of effort<br>
+      <input type="radio" name="Q1b" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q1b" value="alittle">A little effort<br>
+      <input type="radio" name="Q1b" value="none">No effort at all<br>
+      <br>
+
+      <h2>Question 2</h2>
+      <p id="secondReminderText" class="block-text">{{}}</p>
+      <p><b>2a. </b><span id="secondEffectiveText" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q2a" value="extremely">Extremely effective<br>
+      <input type="radio" name="Q2a" value="very">Very effective<br>
+      <input type="radio" name="Q2a" value="moderately">Moderately effective<br>
+      <input type="radio" name="Q2a" value="slightly">Slightly effective<br>
+      <input type="radio" name="Q2a" value="not">Not at all effective<br>
+      <br>
+      <p><b>2b. </b><span id="secondEffortText" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q2b" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q2b" value="alot">A lot of effort<br>
+      <input type="radio" name="Q2b" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q2b" value="alittle">A little effort<br>
+      <input type="radio" name="Q2b" value="none">No effort at all<br>
+      <br>
+      <h2>Question 3</h2>
+      <p>In the second round of learning Swahili-English word pairs, the 'Learning phase' was self-regulated. You could click to study each Swahili-English word pair using the strategy you chose.<p>
+      <p>As best you can, please describe your strategy choices in Round 2.</p>
+      <textarea id="Q3" name="Q3" rows="5" style="width: 500px"></textarea>
+      <br>
+      <h2>Question 4</h2>
+      <p>Overall, how much effort did you put into your participation in this study?</p>
+      <input type="radio" name="Q4" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q4" value="alot">A lot of effort<br>
+      <input type="radio" name="Q4" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q4" value="alittle">A little effort<br>
+      <input type="radio" name="Q4" value="none">No effort at all<br>
+      <div style="text-align: center">
+        <button type="button" id="questionnaireNextButton">Next</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- The finish slide. -->
+<div class="slide" id="end">
+  <div style="width: 500px; margin: 0 auto; text-align: center; background-color: #8C1516; padding: 20px 15px 10px 10px">
+      <img src="images/stanford.png" height="46" width="360" alt="Stanford University">
+  </div>
+  <p class='logo-text'>Stanford AAA Lab</p>
+  <div class="block-text">
+    <p>You have reached the end of the study! Thank you very much for your participation.</p>
+    <!-- <p id="bonusPaymentText" class="block-text">{{}}</p> -->
+    <p>If you would like to give comments or feedback to the research team, kindly leave us a note:</p>
+  </div>
+  <div style="text-align: center">
+    <textarea id="comments" name="comments" rows="5" style="width: 500px"></textarea>
+  </div>
+  <div style="text-align: center">
+    <button type="button" id="redirectButton">Submit and return to Prolific</button>
+  </div>
+</div>
+
+
+<!-- The doesNotConsent slide. -->
+<div class="slide" id="doesNotConsent">
+  <div style="width: 500px; margin: 0 auto; text-align: center; background-color: #8C1516; padding: 20px 15px 10px 10px">
+      <img src="images/stanford.png" height="46" width="360" alt="Stanford University">
+  </div>
+  <p class='logo-text'>Stanford AAA Lab</p>
+  <div class="block-text">
+    <p>As you do not wish to participate in this study, please return your submission on Prolific by selecting the 'Stop without completing' button.</p>
+    <p>If you would like to give comments or feedback to the research team, kindly leave us a note:</p>
+  </div>
+  <div style="text-align: center">
+    <textarea id="noConsentComments" name="noConsentComments" rows="5" style="width: 500px"></textarea>
+  </div>
+  <div style="text-align: center">
+    <button type="button" id="noConsentCommentsButton">Submit Comments</button>
+  </div>
+</div>
+
+
+<!-- The thank you slide -->
+<div class="slide" id="thankyou">
+  <div style="width: 500px; margin: 0 auto; text-align: center; background-color: #8C1516; padding: 20px 15px 10px 10px">
+      <img src="images/stanford.png" height="46" width="360" alt="Stanford University">
+  </div>
+  <p class='logo-text'>Stanford AAA Lab</p>
+  <div class="block-text">
+    <p>Thank you very much for your comments.</p>
+  </div>
+</div>
+
+<!-- Include the JavaScript file for the experiment. As written, that script immediately executes commands, so we include it here at the end of the HTML file to ensure that resources referenced by the script actually exist. For instance, one of the immediately executed commands is <code>showSlide("instructions")</code>. If we loaded experiment.js, say, in the <code>head</code> section, <code>showSlide("instructions")</code> would fail because the <code>instructions</code> slide doesn't exist yet. It is possible to load the script in <code>head</code> but you have to ensure that any immediately executed commands, if they rely on potentially uninitialized HTML elements, are _delayed_ until the page is ready, using either [window.onload][onload] or jQuery's more robust [$(document).ready()][domReady]  -->
+<!-- [onload]: https://developer.mozilla.org/en/DOM/window.onload -->
+<!-- [domReady]: http://api.jquery.com/ready/ -->
+<script src="experiment_v5.js"></script>
+
+</body>
+</html>

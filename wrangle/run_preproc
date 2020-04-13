@@ -1,0 +1,5 @@
+#!/bin/zsh
+
+# to run, type % zsh run_preproc
+
+python preproc_json_v5.py 2020-03-10 v5n48

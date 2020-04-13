@@ -1,0 +1,35 @@
+<html>
+<head>
+  <title>Pilot Expt 1: Conditions</title>
+
+  <!-- Add Firebase SDKs (software dev kit) from the CDN (content delivery network) -->
+  <!-- (in the <head> tag of your page, before other script tags)  -->
+  <!-- Do a partial import of products you need -->
+  <!-- Firebase core is always required and must be first -->
+  <script src="/__/firebase/5.9.4/firebase-app.js"></script>
+  <!-- Add additional services that you want to use -->
+  <!-- Firebase Realtime Database -->
+  <script src="/__/firebase/5.9.4/firebase-database.js"></script>
+  <!-- Initialize Firebase -->
+  <script src="/__/firebase/init.js"></script>
+
+  <!-- Include the [jQuery library](http://jquery.com/), which helps you manipulate HTML elements from JS. -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- Include the cascading style sheet (CSS), which lets us separate style from content. This stylesheet is important because it defines the notion of a **slide** and also makes things look nicer, which subjects appreciate. It's worth looking at the [source code](style.html). -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div style="text-align: center">
+    <br>
+    <p>Existing conditions:</p>
+    <div><p id="conditionsArray">{{}}</p></div>
+    <p>Participant index (# Participants - 1):</p>
+    <div><p id="participantIndex">{{}}</p></div>
+    <p>How many participants in each condition?</p>
+    <div><input id="nparticipants" name="nparticipants"></div>
+    <button type="button" onclick="this.blur(); createConditions();">Generate Conditions</button>
+  </div>
+  <script src="create_conditions.js"></script>
+</body>
+</html>
