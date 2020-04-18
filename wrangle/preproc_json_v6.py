@@ -476,6 +476,8 @@ df_items = df_items[[
   "assessmentStrategyOrder",
   "assessmentTestOrder",
   "assessmentStrategy",
+  "assessmentStrategyUserInput",
+  "assessmentStrategyAccuracy",
   "assessmentTestUserInput",
   "assessmentTestAccuracy",
   "assessmentTestLevDist1",
