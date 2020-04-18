@@ -613,10 +613,10 @@ function runExpt(){
       if (experiment.predictRestudyFirst){
         // predict restudy first, then predict generate
         var firstStratText = "<b>Reviewing</b> the English translation by copying it into a textbox";
-        var secondStratText = "<b>Recalling</b> the English translation from memory";
+        var secondStratText = "<b>Generating</b> the English translation from memory";
       } else {
         // predict generate first, then predict restudy
-        var firstStratText = "<b>Recalling</b> the English translation from memory";
+        var firstStratText = "<b>Generating</b> the English translation from memory";
         var secondStratText = "<b>Reviewing</b> the English translation by copying it into a textbox";
       }
       if (round == 1) {
@@ -630,7 +630,7 @@ function runExpt(){
                   </ol>\
                   After 5 seconds, the screen will automatically advance and save your input. \
                   <br><br>\
-                  For the cases that you try to <b>recall</b> the translation from memory, \
+                  For the cases that you try to <b>generate</b> the translation from memory, \
                   you will get to see the correct answer at the end of the 5 seconds. \
                   If you were correct, the answer will be shown in <b><font color='green'>green</font></b>, \
                   if incorrect, the answer will be shown in <b><font color='red'>red</font></b>.";
@@ -643,11 +643,11 @@ function runExpt(){
         var text1 = "Now, you will be asked to study each Swahili-English word pair again, \
                   either by (1) \
                   reviewing the English translation by copying it into the textbox, or (2) trying to \
-                  recall the English translation from memory. For each word pair, if you copied \
-                  in the first study round, you will be asked to copy again; if you tried to recall in the \
-                  first study round, you will be asked to recall again. After 5 seconds,\
+                  generate the English translation from memory. For each word pair, if you copied \
+                  in the first study round, you will be asked to copy again; if you tried to generate in the \
+                  first study round, you will be asked to generate again. After 5 seconds,\
                   the screen will automatically advance and save your input. For the cases that you \
-                  try to recall the translation from memory, you will get to see the correct answer. \
+                  try to generate the translation from memory, you will get to see the correct answer. \
                   If you were correct, the answer will be <b><font color='green'>green</font></b>, \
                   if incorrect, the answer will be <b><font color='red'>red</font></b>.";
         var text2 = "Please make sure you understand these instructions before you begin."
@@ -774,7 +774,7 @@ function runExpt(){
       think you’ll remember on the quiz?`;
       
       var generatePredictionText = `For ${experiment.numTrials/4} of these Swahili-English word pairs, you studied using 
-      the <b>recall</b> strategy--you tried to recall the English translation 
+      the <b>generate</b> strategy--you tried to generate the English translation 
       from memory. Out of these ${experiment.numTrials/4}, how many English translations do you 
       think you’ll remember on the quiz?`;
       
@@ -946,7 +946,7 @@ function runExpt(){
 
     Strategy feedback: Proof of utility
     “You scored a __ / 20!
-    When using the recall strategy, you scored __ /10
+    When using the generate strategy, you scored __ /10
     When using the review strategy, you scored __ /10
     */
     interventionFeedback: function() {
@@ -963,12 +963,12 @@ function runExpt(){
         /numTrialsDiv4/g, experiment.numTrials/4).replace(
         "predictionRestudyReason", experiment.predictionRestudyReason).replace(
         "interventionTestRestudyScore", experiment.interventionTestRestudyScore)
-      var generateFeedbackText = "On the items that you studied by <b>recalling</b> the \
+      var generateFeedbackText = "On the items that you studied by <b>generating</b> the \
       English translation from memory...\
       <ul>\
       <li>You predicted that you would score predictionGenerate/numTrialsDiv4.</li> \
       <li>The reason you provided for this prediction was: predictionGenerateReason</li>\
-      <li>Your <u>actual score</u> when studying by <b>recalling</b> was interventionTestGenerateScore/numTrialsDiv4.</li>\
+      <li>Your <u>actual score</u> when studying by <b>generating</b> was interventionTestGenerateScore/numTrialsDiv4.</li>\
       </ul>"
       var generateFeedbackTextReplaced = generateFeedbackText.replace(
         "predictionGenerate", experiment.predictionGenerate).replace(
@@ -1084,14 +1084,14 @@ function runExpt(){
 
     assessmentStrategyFraming: function() {
       var reviewText = "If you click <b>Review</b>, you will study the next word pair by reviewing the English translation by copying it into a textbox";
-      var recallText = "If you click <b>Recall</b>, you will study the next word pair by recalling the English translation from memory";
+      var generateText = "If you click <b>Generate</b>, you will study the next word pair by generating the English translation from memory";
       if (experiment.predictRestudyFirst){
         // predict restudy first, then predict generate
         var firstStratText = reviewText;
-        var secondStratText = recallText;
+        var secondStratText = generateText;
       } else {
         // predict generate first, then predict restudy
-        var firstStratText = recallText;
+        var firstStratText = generateText;
         var secondStratText = reviewText;
       }
       var header = "Round 2: Learning phase";
@@ -1105,7 +1105,7 @@ function runExpt(){
         </ul>\
         After 5 seconds, the screen will automatically advance and save your input. \
         <br><br>\
-        For the cases that you try to <b>recall</b> the translation from memory, \
+        For the cases that you try to <b>generate</b> the translation from memory, \
         you will get to see the correct answer at the end of the 5 seconds. \
         If you were correct, the answer will be shown in <b><font color='green'>green</font></b>, \
         if incorrect, the answer will be shown in <b><font color='red'>red</font></b>.";
@@ -1140,10 +1140,10 @@ function runExpt(){
       if (experiment.predictRestudyFirst){
         // predict restudy first, then predict generate
         var firstButtonText = "Review";
-        var secondButtonText = "Recall";
+        var secondButtonText = "Generate";
       } else {
         // predict generate first, then predict restudy
-        var firstButtonText = "Recall";
+        var firstButtonText = "Generate";
         var secondButtonText = "Review";
       }
 
@@ -1179,7 +1179,7 @@ function runExpt(){
       wait2.innerHTML = "";
       wait3.innerHTML = "";
       wait4.innerHTML = "";
-      if (selectedStrategy=="Recall"){
+      if (selectedStrategy=="Generate"){
         experiment.assessmentStrategyChoiceGenerateCount += 1; 
         experiment.assessmentGenerateTrialsSave.push(currItem);
         showSlide("generate");
@@ -1312,13 +1312,13 @@ function runExpt(){
       var restudyReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
         the <b>review</b> strategy--you reviewed the English translation by copying it into the textbox.`;
       var generateReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
-        the <b>recall</b> strategy--you tried to recall the English translation from memory.`;
+        the <b>generate</b> strategy--you tried to generate the English translation from memory.`;
 
       var restudyEffectiveText = `In general, how effective is the <b>review</b> strategy?`;
-      var generateEffectiveText = `In general, how effective is the <b>recall</b> strategy?`;
+      var generateEffectiveText = `In general, how effective is the <b>generate</b> strategy?`;
 
       var restudyEffortText = `In general, how much effort does the <b>review</b> strategy require?`;
-      var generateEffortText = `In general, how much effort does the <b>recall</b> strategy require?`;
+      var generateEffortText = `In general, how much effort does the <b>generate</b> strategy require?`;
 
 
       if (experiment.predictRestudyFirst){
