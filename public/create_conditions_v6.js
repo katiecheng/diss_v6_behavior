@@ -1,6 +1,6 @@
 /*
-Ensures balanced random assignment to two conditions.
-To trigger, nav to app/create_conditions.html
+Ensures balanced random assignment to three conditions.
+To trigger, nav to app/create_conditions_v6.html
 If conditions list exists, will display
 Else, type in desired # of participants per condition, and click 'Generate Conditions'
 Will generate conditions and participant index, stored in Firebase
@@ -30,8 +30,9 @@ function shuffle(array) {
 function createConditions() {
   var n = parseInt($("#nparticipants").val()),
     controlArray = Array(n).fill(0),
-    exptArray = Array(n).fill(1),
-    conditionsArray = shuffle(controlArray.concat(exptArray));
+    expt1Array = Array(n).fill(1),
+    expt2Array = Array(n).fill(2),
+    conditionsArray = shuffle(controlArray.concat(expt1Array).concat(expt2Array));
 
   db.ref('conditions/').set({
     conditionsArray: conditionsArray,

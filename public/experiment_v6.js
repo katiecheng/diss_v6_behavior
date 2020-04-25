@@ -360,11 +360,11 @@ function getCondition(){
         condition = conditionsArray[participantIndex];
       } else {
         // just in case needed to add more participants beyond the generated list
-        condition = randomInteger(2);
+        condition = randomInteger(3);
       }
     } else {
       // just in case conditions not generated, randomly assign a condition
-      condition = randomInteger(2);
+      condition = randomInteger(3);
     }
   });
 
