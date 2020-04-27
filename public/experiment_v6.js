@@ -377,10 +377,6 @@ function getCondition(){
     runExpt();
     // Show the instructions slide -- this is what we want subjects to see first.
     showSlide("getProlificId");
-
-    // test choice slide
-    // showSlide("choiceRG");
-    // experiment.questionnaire();
   });
 }
 
@@ -400,8 +396,7 @@ var experiment = "",
   /* toggle test 1 or 2 strategy rounds */
   numStrategyRounds = 1,
   /* toggle number of conditions */
-  // condition = randomInteger(4), // 2x2
-  condition = -1, // 1 expt vs. 0 control
+  condition = -1, // 2 expt2, 1 expt1, vs. 0 control
   // condition = 2, // fixed to expt?
   /* toggle intervention prediction order */
   predictRestudyFirst = randomInteger(2), // 1 or 0
@@ -703,6 +698,7 @@ function runExpt(){
       if (generateItem) {
         experiment.interventionGenerateTrialsSave.push(currItem);
         showSlide("generate");
+        $("#hint").html(swahili + " : ");
         $("#swahili").html(swahili + " : ");
         $("#generatedWord").val('');
         $("#generatedWord").focus();
@@ -754,6 +750,7 @@ function runExpt(){
 
     //show feedback
     interventionGenerateFeedback: function(round, swahili, english, accuracy) {
+      $("#hint").hide();
       $("#feedback").show();
       $("#feedback").html(swahili + " : " + english);
       if (accuracy == 1){
@@ -762,6 +759,7 @@ function runExpt(){
         $("#feedback").css("color", "red");
       }
       setTimeout(function(){
+        $("#hint").show();
         $("#feedback").hide();
         experiment.interventionStrategy(round);}, feedbackDuration); 
     },
@@ -1183,6 +1181,7 @@ function runExpt(){
         experiment.assessmentStrategyChoiceGenerateCount += 1; 
         experiment.assessmentGenerateTrialsSave.push(currItem);
         showSlide("generate");
+        $("#hint").html(swahili + " : ");
         $("#swahili").html(swahili + " : ");
         $("#generatedWord").val('');
         $("#generatedWord").focus();
@@ -1227,6 +1226,7 @@ function runExpt(){
 
   //show feedback
   assessmentGenerateFeedback: function(swahili, english, accuracy) {
+    $("#hint").hide();
     $("#feedback").show();
     $("#feedback").html(swahili + " : " + english);
     if (accuracy == 1){
@@ -1235,6 +1235,7 @@ function runExpt(){
       $("#feedback").css("color", "red");
     }
     setTimeout(function(){
+      $("#hint").show();
       $("#feedback").hide();
       experiment.assessmentChoice();}, feedbackDuration); 
   },

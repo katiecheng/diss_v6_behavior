@@ -99,8 +99,8 @@
   </p>
   </div>
   <!-- Button to start the experiment. <code>this.blur()</code> removes the focus from the button, if the user pressed the button by using the keyboard, rather than the mouse. -->
+  <button type="button" onclick="this.blur(); experiment.assessmentStrategyFraming();">Start</button>
   <!-- <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button> -->
-  <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button>
   <button type="button" onclick="this.blur(); experiment.doesNotConsent();">End</button>
   <!-- <button type="button" onclick="this.blur(); experiment.assessmentChoiceFraming();">Start</button> -->
   <!-- Legal blurb that we're to show. -->
@@ -141,28 +141,34 @@
 
 <!-- The generate slide -->
 <div class="slide" id="generate">
-  <div style="text-align: center">
-    <form id="generatedForm" name="generatedForm" autocomplete="off" 
-      onkeypress="return event.keyCode != 13;">
-      <h1 class="wordpair" style="display: inline-block" id="swahili" name="swahili">{{}}</h1>
-      <input style="margin-left: 10px" id="generatedWord" name="generatedWord">
-    </form>
-    <h1 hidden class="wordpair" id="feedback">{{}}</h1>
+  <div style="width: 400px; margin: 0 auto;">
+    <div style="text-align: left">
+      <span><h1 class="wordpair" id="hint">{{}}</h1></span>
+      <span><h1 hidden class="wordpair" id="feedback">{{}}</h1></span>
+      <form id="generatedForm" name="generatedForm" autocomplete="off" 
+        onkeypress="return event.keyCode != 13;">
+        <h1 class="wordpair" style="display: inline-block" id="swahili" name="swahili">{{}}</h1>
+        <input style="margin-left: 10px" id="generatedWord" name="generatedWord">
+      </form>
+      
+    </div>
+    <div style="text-align: left"><span id="wait2"> </span></div>
   </div>
-  <div style="text-align: center"><span id="wait2"> </span></div>
 </div>
 
 <!-- The restudy slide -->
 <div class="slide" id="restudy">
-  <div style="text-align: center">
-    <h1 class="wordpair" id="restudyWordpair">{{}}</h1>
-    <form id="restudiedForm" name="restudiedForm" autocomplete="off" 
-      onkeypress="return event.keyCode != 13;">
-      <h1 class="wordpair" style="display: inline-block" id="restudySwahili" name="restudySwahili">{{}}</h1>
-      <input style="margin-left: 10px" id="restudiedWord" name="restudiedWord">
-    </form>
+  <div style="width: 400px; margin: 0 auto;">
+    <div style="text-align: left">
+      <h1 class="wordpair" id="restudyWordpair">{{}}</h1>
+      <form id="restudiedForm" name="restudiedForm" autocomplete="off" 
+        onkeypress="return event.keyCode != 13;">
+        <h1 class="wordpair" style="display: inline-block" id="restudySwahili" name="restudySwahili">{{}}</h1>
+        <input style="margin-left: 10px" id="restudiedWord" name="restudiedWord">
+      </form>
+    </div>
+    <div style="text-align: left"><span id="wait3"> </span></div>
   </div>
-  <div style="text-align: center"><span id="wait3"> </span></div>
 </div>
 
 <!-- The test slide -->
