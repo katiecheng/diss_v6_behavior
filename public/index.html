@@ -99,8 +99,8 @@
   </p>
   </div>
   <!-- Button to start the experiment. <code>this.blur()</code> removes the focus from the button, if the user pressed the button by using the keyboard, rather than the mouse. -->
-  <button type="button" onclick="this.blur(); experiment.assessmentStrategyFraming();">Start</button>
-  <!-- <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button> -->
+  <!-- <button type="button" onclick="this.blur(); experiment.assessmentStrategyFraming();">Start</button> -->
+  <button type="button" onclick="this.blur(); experiment.interventionStudyFraming();">Start</button>
   <button type="button" onclick="this.blur(); experiment.doesNotConsent();">End</button>
   <!-- <button type="button" onclick="this.blur(); experiment.assessmentChoiceFraming();">Start</button> -->
   <!-- Legal blurb that we're to show. -->
@@ -130,10 +130,12 @@
 
 <!-- The study slide -->
 <div class="slide" id="study">
-  <div style="text-align: center">
-    <h1 class="wordpair" id="wordpair">{{}}</h1>
+  <div style="width: 500px; margin: 0 auto;">
+    <div style="text-align: left">
+      <h1 class="wordpair" id="wordpair">{{}}</h1>
+    </div>
+    <div style="text-align: left"><span id="wait"> </span></div>
   </div>
-  <div style="text-align: center"><span id="wait"> </span></div>
 </div>
 
 <!-- The occulder -->
@@ -141,7 +143,7 @@
 
 <!-- The generate slide -->
 <div class="slide" id="generate">
-  <div style="width: 400px; margin: 0 auto;">
+  <div style="width: 500px; margin: 0 auto;">
     <div style="text-align: left">
       <span><h1 class="wordpair" id="hint">{{}}</h1></span>
       <span><h1 hidden class="wordpair" id="feedback">{{}}</h1></span>
@@ -158,7 +160,7 @@
 
 <!-- The restudy slide -->
 <div class="slide" id="restudy">
-  <div style="width: 400px; margin: 0 auto;">
+  <div style="width: 500px; margin: 0 auto;">
     <div style="text-align: left">
       <h1 class="wordpair" id="restudyWordpair">{{}}</h1>
       <form id="restudiedForm" name="restudiedForm" autocomplete="off" 
@@ -173,14 +175,16 @@
 
 <!-- The test slide -->
 <div class="slide" id="test">
-  <div style="text-align: center">
-    <form id="testForm" name="testForm" autocomplete="off" 
-      onkeypress="return event.keyCode != 13;">
-      <h1 class="wordpair" style="display: inline-block" id="swahiliTest" name="swahiliTest">{{}}</h1>
-      <input style="margin-left: 10px" id="testedWord" name="testedWord">
-    </form>
+  <div style="width: 500px; margin: 0 auto;">
+    <div style="text-align: left">
+      <form id="testForm" name="testForm" autocomplete="off" 
+        onkeypress="return event.keyCode != 13;">
+        <h1 class="wordpair" style="display: inline-block" id="swahiliTest" name="swahiliTest">{{}}</h1>
+        <input style="margin-left: 10px" id="testedWord" name="testedWord">
+      </form>
+    </div>
+    <div style="text-align: left"><span id="wait4"> </span></div>
   </div>
-  <div style="text-align: center"><span id="wait4"> </span></div>
 </div>
 
 <!-- The prediction slide with a Next button. -->

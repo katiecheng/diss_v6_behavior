@@ -366,6 +366,7 @@ function getCondition(){
       // just in case conditions not generated, randomly assign a condition
       condition = randomInteger(3);
     }
+    console.log(condition)
   });
 
   promise.then(snapshot => {
@@ -376,7 +377,8 @@ function getCondition(){
     });
     runExpt();
     // Show the instructions slide -- this is what we want subjects to see first.
-    showSlide("getProlificId");
+    // showSlide("getProlificId");
+    experiment.questionnaire()
   });
 }
 
@@ -607,22 +609,22 @@ function runExpt(){
     interventionStrategyFraming: function(round) {
       if (experiment.predictRestudyFirst){
         // predict restudy first, then predict generate
-        var firstStratText = "<b>Reviewing</b> the English translation by copying it into a textbox";
-        var secondStratText = "<b>Generating</b> the English translation from memory";
+        var firstStratText = "<b>Reviewing</b> the English translation by copying it into a textbox.";
+        var secondStratText = "<b>Generating</b> the English translation from memory.";
       } else {
         // predict generate first, then predict restudy
-        var firstStratText = "<b>Generating</b> the English translation from memory";
-        var secondStratText = "<b>Reviewing</b> the English translation by copying it into a textbox";
+        var firstStratText = "<b>Generating</b> the English translation from memory.";
+        var secondStratText = "<b>Reviewing</b> the English translation by copying it into a textbox.";
       }
       if (round == 1) {
         /* Toggle for one or two strategy rounds */
         var header = "Round 1: Learning phase";
         // var header = "Study - Round 1";
         var text1 = "Now you will be asked to study each Swahili-English word pair either by:\
-                  <ol>\
+                  <ul>\
                   <li>firstStratText</li>\
                   <li>secondStratText</li>\
-                  </ol>\
+                  </ul>\
                   After 5 seconds, the screen will automatically advance and save your input. \
                   <br><br>\
                   For the cases that you try to <b>generate</b> the translation from memory, \
@@ -1081,8 +1083,9 @@ function runExpt(){
     },
 
     assessmentStrategyFraming: function() {
-      var reviewText = "If you click <b>Review</b>, you will study the next word pair by reviewing the English translation by copying it into a textbox";
-      var generateText = "If you click <b>Generate</b>, you will study the next word pair by generating the English translation from memory";
+      var reviewText = "If you click <b>Review</b>, you will study the next word pair by reviewing the English translation by copying it into a textbox.";
+      var generateText = "If you click <b>Generate</b>, you will study the next word pair by generating the English translation from memory. ";
+      var generateHintText = "<br><br>This time, for the cases that you try to <b>generate</b> the translation from memory, you will be given the first letter of the English translation as a hint."
       if (experiment.predictRestudyFirst){
         // predict restudy first, then predict generate
         var firstStratText = reviewText;
@@ -1101,12 +1104,15 @@ function runExpt(){
         <li>firstStratText</li>\
         <li>secondStratText</li>\
         </ul>\
-        After 5 seconds, the screen will automatically advance and save your input. \
-        <br><br>\
-        For the cases that you try to <b>generate</b> the translation from memory, \
-        you will get to see the correct answer at the end of the 5 seconds. \
-        If you were correct, the answer will be shown in <b><font color='green'>green</font></b>, \
-        if incorrect, the answer will be shown in <b><font color='red'>red</font></b>.";
+        After 5 seconds, the screen will automatically advance and save your input.";
+      if (experiment.condition == 2){
+        text1 += generateHintText
+      }
+        // <br><br>\
+        // For the cases that you try to <b>generate</b> the translation from memory, \
+        // you will get to see the correct answer at the end of the 5 seconds. \
+        // If you were correct, the answer will be shown in <b><font color='green'>green</font></b>, \
+        // if incorrect, the answer will be shown in <b><font color='red'>red</font></b>.";
       var text1replaced = text1.replace(
           "firstStratText", firstStratText).replace(
           "secondStratText", secondStratText);
@@ -1181,7 +1187,11 @@ function runExpt(){
         experiment.assessmentStrategyChoiceGenerateCount += 1; 
         experiment.assessmentGenerateTrialsSave.push(currItem);
         showSlide("generate");
-        $("#hint").html(swahili + " : ");
+        if (experiment.condition == 2) {
+          $("#hint").html(swahili + " : " + english[0] + Array(english.length).join(" _"));
+        } else {
+          $("#hint").html(swahili + " : ");
+        }
         $("#swahili").html(swahili + " : ");
         $("#generatedWord").val('');
         $("#generatedWord").focus();
@@ -1311,9 +1321,25 @@ function runExpt(){
 
     questionnaire: function() {
       var restudyReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
-        the <b>review</b> strategy--you reviewed the English translation by copying it into the textbox.`;
+        the <b>review</b> strategy--you reviewed the English translation by copying it into the textbox. `;
+      var restudyReminderRound2 = `In the second round of learning, you again used the <b>review</b> strategy to study some of the word pairs.`
       var generateReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
-        the <b>generate</b> strategy--you tried to generate the English translation from memory.`;
+        the <b>generate</b> strategy--you tried to generate the English translation from memory. `;
+      var generateReminderRound2NoHint = `In the second round of learning, you again used the <b>generate</b> strategy to study some of the word pairs.`
+      var generateReminderRound2Hint = `In the second round of learning, you again used the <b>generate</b> strategy to study some of the word pairs, \
+      with the first letter of the English translation as a hint.`
+
+      if (experiment.assessmentStrategyChoiceRestudyCount >0 ){
+        restudyReminderText += restudyReminderRound2;
+      }
+
+      if (experiment.assessmentStrategyChoiceGenerateCount >0 ){
+        if (experiment.condition == 1){
+          generateReminderText += generateReminderRound2NoHint;
+        } else if (experiment.condition == 2){
+          generateReminderText += generateReminderRound2Hint;
+        }
+      }
 
       var restudyEffectiveText = `In general, how effective is the <b>review</b> strategy?`;
       var generateEffectiveText = `In general, how effective is the <b>generate</b> strategy?`;
