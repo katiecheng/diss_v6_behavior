@@ -154,6 +154,8 @@ function createNewUser(prolificId, startDateTime, condition) {
     effortRestudy : "",
     effectivenessGenerate : "",
     effortGenerate : "",
+    effectivenessGenerate_withHint : "",
+    effortGenerate_withHint : "",
     chosenStrategy : "",
     effort : "",
 
@@ -220,12 +222,14 @@ function updateUserAssessmentTestScore(prolificId, assessmentScore, assessmentTe
 }
 
 function updateUserQuestionnaire(prolificId, effectivenessRestudy, effortRestudy, 
-        effectivenessGenerate, effortGenerate, chosenStrategy,  effort){
+        effectivenessGenerate, effortGenerate, effectivenessGenerate_withHint, effortGenerate_withHint, chosenStrategy, effort){
   db.ref('users/' + prolificId).update({
     effectivenessRestudy : effectivenessRestudy,
     effortRestudy : effortRestudy,
     effectivenessGenerate : effectivenessGenerate,
     effortGenerate : effortGenerate,
+    effectivenessGenerate_withHint : effectivenessGenerate_withHint,
+    effortGenerate_withHint : effortGenerate_withHint,
     chosenStrategy : chosenStrategy,
     effort : effort
   });
@@ -366,7 +370,7 @@ function getCondition(){
       // just in case conditions not generated, randomly assign a condition
       condition = randomInteger(3);
     }
-    console.log(condition)
+    // console.log(condition)
   });
 
   promise.then(snapshot => {
@@ -377,8 +381,9 @@ function getCondition(){
     });
     runExpt();
     // Show the instructions slide -- this is what we want subjects to see first.
-    // showSlide("getProlificId");
-    experiment.questionnaire()
+    showSlide("getProlificId");
+    // test a particular slide
+    // experiment.assessmentTestFraming()
   });
 }
 
@@ -1267,12 +1272,16 @@ function runExpt(){
       $("#nextButton").click(function(){$(this).blur(); experiment.assessmentTest();});
     },
 
-    assessmentTest: function(){
+    assessmentTest: function() {
       var trials = experiment.assessmentTestTrials;
       if (trials.length == 0) {
         updateUserAssessmentTestScore(experiment.prolificId, experiment.assessmentTestScore,
           experiment.assessmentTestGenerateScore, experiment.assessmentTestRestudyScore);
-        experiment.questionnaire(); 
+        if (experiment.condition == 2 & experiment.assessmentStrategyChoiceGenerateCount > 0) {
+          experiment.questionnaire_withHint(); 
+        } else {
+          experiment.questionnaire(); 
+        }
         return;
       } 
 
@@ -1319,27 +1328,12 @@ function runExpt(){
       // experiment.assessmentTestData.push(data);
     },
 
+
     questionnaire: function() {
       var restudyReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
-        the <b>review</b> strategy--you reviewed the English translation by copying it into the textbox. `;
-      var restudyReminderRound2 = `In the second round of learning, you again used the <b>review</b> strategy to study some of the word pairs.`
+        the <b>review</b> strategy--you reviewed the English translation by copying it into the textbox.`;
       var generateReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
-        the <b>generate</b> strategy--you tried to generate the English translation from memory. `;
-      var generateReminderRound2NoHint = `In the second round of learning, you again used the <b>generate</b> strategy to study some of the word pairs.`
-      var generateReminderRound2Hint = `In the second round of learning, you again used the <b>generate</b> strategy to study some of the word pairs, \
-      with the first letter of the English translation as a hint.`
-
-      if (experiment.assessmentStrategyChoiceRestudyCount >0 ){
-        restudyReminderText += restudyReminderRound2;
-      }
-
-      if (experiment.assessmentStrategyChoiceGenerateCount >0 ){
-        if (experiment.condition == 1){
-          generateReminderText += generateReminderRound2NoHint;
-        } else if (experiment.condition == 2){
-          generateReminderText += generateReminderRound2Hint;
-        }
-      }
+        the <b>generate</b> strategy--you tried to generate the English translation from memory.`;
 
       var restudyEffectiveText = `In general, how effective is the <b>review</b> strategy?`;
       var generateEffectiveText = `In general, how effective is the <b>generate</b> strategy?`;
@@ -1350,8 +1344,6 @@ function runExpt(){
 
       if (experiment.predictRestudyFirst){
         // predict restudy first, then predict generate
-        // var firstQuestionText = restudyQuestionText;
-        // var secondQuestionText = generateQuestionText;
         var firstReminderText = restudyReminderText;
         var firstEffectiveText = restudyEffectiveText;
         var firstEffortText = restudyEffortText;
@@ -1360,8 +1352,6 @@ function runExpt(){
         var secondEffortText = generateEffortText;
       } else {
         // predict generate first, then predict restudy
-        // var firstQuestionText = generateQuestionText;
-        // var secondQuestionText = restudyQuestionText;
         var firstReminderText = generateReminderText;
         var firstEffectiveText = generateEffectiveText;
         var firstEffortText = generateEffortText;
@@ -1378,7 +1368,7 @@ function runExpt(){
       $("#secondEffectiveText").html(secondEffectiveText);
       $("#secondEffortText").html(secondEffortText);
       $("#questionnaireNextButton").click(function(){$(this).blur(); 
-        $("#questionnaireForm").submit(experiment.validateQuestionnaire());
+      $("#questionnaireForm").submit(experiment.validateQuestionnaire());
       })
     },
 
@@ -1427,7 +1417,121 @@ function runExpt(){
       var chosenStrategy = $("#Q3").val(),
         effort = $("input:radio[name=Q4]:checked").val();
       updateUserQuestionnaire(experiment.prolificId, effectivenessRestudy, effortRestudy, 
-        effectivenessGenerate, effortGenerate, chosenStrategy, effort);
+        effectivenessGenerate, effortGenerate, "", "", chosenStrategy, effort);
+      experiment.end()
+    },
+
+    questionnaire_withHint: function() {
+      var restudyReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
+        the <b>review</b> strategy--you reviewed the English translation by copying it into the textbox.`;
+
+      var generateReminderText = `In the first round of learning Swahili-English word pairs, you studied half of the word pairs using  
+        the <b>generate</b> strategy--you tried to generate the English translation from memory, given the Swahli word as a prompt.`;
+
+      var generateReminderText_withHint = `In the second round of learning Swahili-English word pairs, you studied some of the word pairs using  
+        the <b>generate</b> strategy, but this time with a hint--you tried to generate the English translation from memory, \
+        given the Swahili word and the first letter of the English translation as a hint.`;
+
+      var restudyEffectiveText = `In general, how effective is the <b>review</b> strategy?`;
+      var generateEffectiveText = `In general, how effective is the <b>generate</b> strategy?`;
+      var generateEffectiveText_withHint = `In general, how effective is the <b>generate</b> strategy when\
+      given the first letter of the English translation as a hint?`;
+
+      var restudyEffortText = `In general, how much effort does the <b>review</b> strategy require?`;
+      var generateEffortText = `In general, how much effort does the <b>generate</b> strategy require?`;
+      var generateEffortText_withHint = `In general, how much effort does the <b>generate</b> strategy require when\
+      given the first letter of the English translation as a hint?`;
+
+
+      if (experiment.predictRestudyFirst){
+        // predict restudy first, then predict generate
+        var firstReminderText = restudyReminderText;
+        var firstEffectiveText = restudyEffectiveText;
+        var firstEffortText = restudyEffortText;
+        var secondReminderText = generateReminderText;
+        var secondEffectiveText = generateEffectiveText;
+        var secondEffortText = generateEffortText;
+        var thirdReminderText = generateReminderText_withHint;
+        var thirdEffectiveText = generateEffectiveText_withHint;
+        var thirdEffortText = generateEffortText_withHint;
+      } else {
+        // predict generate first, then predict restudy
+        var firstReminderText = generateReminderText;
+        var firstEffectiveText = generateEffectiveText;
+        var firstEffortText = generateEffortText;
+        var secondReminderText = generateReminderText_withHint;
+        var secondEffectiveText = generateEffectiveText_withHint;
+        var secondEffortText = generateEffortText_withHint;
+        var thirdReminderText = restudyReminderText;
+        var thirdEffectiveText = restudyEffectiveText;
+        var thirdEffortText = restudyEffortText;
+      }
+
+      showSlide("questionnaire_withHint");
+      $("#firstReminderText_withHint").html(firstReminderText);
+      $("#firstEffectiveText_withHint").html(firstEffectiveText);
+      $("#firstEffortText_withHint").html(firstEffortText);
+      $("#secondReminderText_withHint").html(secondReminderText);
+      $("#secondEffectiveText_withHint").html(secondEffectiveText);
+      $("#secondEffortText_withHint").html(secondEffortText);
+      $("#thirdReminderText_withHint").html(thirdReminderText);
+      $("#thirdEffectiveText_withHint").html(thirdEffectiveText);
+      $("#thirdEffortText_withHint").html(thirdEffortText);
+      $("#questionnaireNextButton_withHint").click(function(){$(this).blur(); 
+      $("#questionnaireForm_withHint").submit(experiment.validateQuestionnaire_withHint());
+      })
+    },
+
+    validateQuestionnaire_withHint: function(){
+      var fail = false,
+        errorLog = "We noticed that you did not provide a valid response to some of our questions. Please check your response to the following questions:\n",
+        names = ['Q1a', 'Q1b', 'Q2a', 'Q2b', 'Q3a', 'Q3b', 'Q4', 'Q5']
+      for (name of names){
+        if (name == 'Q4'){ 
+          // strategy textarea, trim whitespace
+          if (!$.trim($("#Q4_withHint").val())){
+            fail = true;
+            errorLog += name + " ";
+          }
+        } else if (! $("input:radio[name=inputName]".replace("inputName", name)).is(":checked")) {
+          // radio buttons
+          fail = true;
+          errorLog += name + " ";
+        } 
+      }        
+      if (fail) {
+        if (!experiment.validateQuestionnaireAlerted){
+          // errorLog += `But if you'd prefer not to, you can click the "Next" button below.\n`;
+          alert(errorLog);
+          // experiment.validateQuestionnaireAlerted = true; // toggle to allow empty
+        } else {
+        experiment.captureQuestionnaire_withHint();
+        }
+      } else {
+        experiment.captureQuestionnaire_withHint();
+      }
+    },
+
+    captureQuestionnaire_withHint: function(){
+      if (experiment.predictRestudyFirst){
+        var effectivenessRestudy = $("input:radio[name=Q1a]:checked").val(),
+          effortRestudy = $("input:radio[name=Q1b]:checked").val(),
+          effectivenessGenerate = $("input:radio[name=Q2a]:checked").val(),
+          effortGenerate = $("input:radio[name=Q2b]:checked").val();
+          effectivenessGenerate_withHint = $("input:radio[name=Q3a]:checked").val(),
+          effortGenerate_withHint = $("input:radio[name=Q3b]:checked").val();
+      } else {
+        var effectivenessRestudy = $("input:radio[name=Q3a]:checked").val(),
+          effortRestudy = $("input:radio[name=Q3b]:checked").val(),
+          effectivenessGenerate = $("input:radio[name=Q1a]:checked").val(),
+          effortGenerate = $("input:radio[name=Q1b]:checked").val();
+          effectivenessGenerate_withHint = $("input:radio[name=Q2a]:checked").val(),
+          effortGenerate_withHint = $("input:radio[name=Q2b]:checked").val();
+      }
+      var chosenStrategy = $("#Q4_withHint").val(),
+        effort = $("input:radio[name=Q5]:checked").val();
+      updateUserQuestionnaire(experiment.prolificId, effectivenessRestudy, effortRestudy, 
+        effectivenessGenerate, effortGenerate, effectivenessGenerate_withHint, effortGenerate_withHint, chosenStrategy, effort);
       experiment.end()
     },
 

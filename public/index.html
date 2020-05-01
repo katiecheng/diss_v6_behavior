@@ -108,7 +108,7 @@
   <br>DESCRIPTION: You are invited to participate in a research study on people's behaviors while learning. We will collect data about how you click and interact with this website during the study. The data will only be used by us in ways that you agree to below. We will keep the data for approximately 10 years, after which point they will be destroyed. 
   <br>RISKS AND BENEFITS: There are no foreseeable risks associated with this study. There are also no benefits other than the chance to learn some new material.  We cannot and do not guarantee or promise that you will receive any benefits from this study. 
   <br>TIME INVOLVEMENT: The study should take approximately 20-30 minutes. 
-  <br>PAYMENTS: You will receive $2.20 for participation in this research<!-- , plus any additional bonus payments earned -->.
+  <br>PAYMENTS: You will receive $2.70 for participation in this research<!-- , plus any additional bonus payments earned -->.
   <br>SUBJECT RIGHTS: If you have read this form and have decided to participate in this project, please understand your participation is voluntary and you have the right to withdraw your consent or discontinue participation at any time without penalty. You have the right to refuse to answer particular questions. Your individual privacy will be maintained in all published and written data resulting from the study. We will only use and share the video data in ways that you agree to. 
   <br>CONTACT INFORMATION:  For questions about the study, contact Katie Cheng at <a href="mailto://katiemc@stanford.edu">katiemc@stanford.edu</a> or 1-650-736-1514. 
   <br>INDEPENDENT CONTACT:  If you are not satisfied with how this study is being conducted, or if you have any concerns, complaints, or general questions about the research or your rights as a participant, please contact the Stanford Institutional Review Board (IRB) to speak to someone independent of the research team at 1-650-723-2480 or toll free at 1-866-680-2906, or email at IRB2-Manager@lists.stanford.edu.  You can also write to the Stanford IRB, Stanford University, 3000 El Camino Real, Five Palo Alto Square, 4th Floor, Palo Alto, CA 94306.
@@ -218,11 +218,11 @@
   <div style="width: 500px; margin: 0 auto;">
     <h1 id="feedbackHeader">Quiz Results</h1>
   </div>
-  <div><p class="block-text" id="feedbackText">{{}}</p></div>
-  <br>
   <div><p class="block-text" id="firstFeedbackText">{{}}</p></div>
   <br>
   <div><p class="block-text" id="secondFeedbackText">{{}}</p></div>
+  <br>
+  <div><p class="block-text" id="feedbackText">{{}}</p></div>
   <br>
   <div style="text-align: center">
     <button type="button" id="feedbackNextButton">Next</button>
@@ -336,6 +336,85 @@
       <input type="radio" name="Q4" value="none">No effort at all<br>
       <div style="text-align: center">
         <button type="button" id="questionnaireNextButton">Next</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- The questionnaire slide _withHint. -->
+<div class="slide" id="questionnaire_withHint">
+  <div class="block-text">
+    <h1>Tell us about your experience</h1>
+    <p> Great work. Finally, we'll ask you a few questions about your experience with the study. Please be honest. Your responses to the following questions will not affect your participation or compensation.</p><br>
+    <form id="questionnaireForm_withHint" name="questionnaireForm_withHint" autocomplete="off"
+      onkeypress="return event.keyCode != 13;">
+
+      <h2>Question 1</h2>
+      <p id="firstReminderText_withHint" class="block-text">{{}}</p>
+      <p><b>1a. </b><span id="firstEffectiveText_withHint" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q1a" value="extremely">Extremely effective<br>
+      <input type="radio" name="Q1a" value="very">Very effective<br>
+      <input type="radio" name="Q1a" value="moderately">Moderately effective<br>
+      <input type="radio" name="Q1a" value="slightly">Slightly effective<br>
+      <input type="radio" name="Q1a" value="not">Not at all effective<br>
+      <br>
+      <p><b>1b. </b><span id="firstEffortText_withHint" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q1b" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q1b" value="alot">A lot of effort<br>
+      <input type="radio" name="Q1b" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q1b" value="alittle">A little effort<br>
+      <input type="radio" name="Q1b" value="none">No effort at all<br>
+      <br>
+
+      <h2>Question 2</h2>
+      <p id="secondReminderText_withHint" class="block-text">{{}}</p>
+      <p><b>2a. </b><span id="secondEffectiveText_withHint" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q2a" value="extremely">Extremely effective<br>
+      <input type="radio" name="Q2a" value="very">Very effective<br>
+      <input type="radio" name="Q2a" value="moderately">Moderately effective<br>
+      <input type="radio" name="Q2a" value="slightly">Slightly effective<br>
+      <input type="radio" name="Q2a" value="not">Not at all effective<br>
+      <br>
+      <p><b>2b. </b><span id="secondEffortText_withHint" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q2b" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q2b" value="alot">A lot of effort<br>
+      <input type="radio" name="Q2b" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q2b" value="alittle">A little effort<br>
+      <input type="radio" name="Q2b" value="none">No effort at all<br>
+      <br>
+
+      <h2>Question 3</h2>
+      <p id="thirdReminderText_withHint" class="block-text">{{}}</p>
+      <p><b>3a. </b><span id="thirdEffectiveText_withHint" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q3a" value="extremely">Extremely effective<br>
+      <input type="radio" name="Q3a" value="very">Very effective<br>
+      <input type="radio" name="Q3a" value="moderately">Moderately effective<br>
+      <input type="radio" name="Q3a" value="slightly">Slightly effective<br>
+      <input type="radio" name="Q3a" value="not">Not at all effective<br>
+      <br>
+      <p><b>3b. </b><span id="thirdEffortText_withHint" class="block-text">{{}}</span></p>
+      <input type="radio" name="Q3b" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q3b" value="alot">A lot of effort<br>
+      <input type="radio" name="Q3b" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q3b" value="alittle">A little effort<br>
+      <input type="radio" name="Q3b" value="none">No effort at all<br>
+      <br>
+
+      <h2>Question 4</h2>
+      <p>In the second round of learning Swahili-English word pairs, the 'Learning phase' was self-regulated. You could click to study each Swahili-English word pair using the strategy you chose.<p>
+      <p>As best you can, please describe your strategy choices in Round 2.</p>
+      <textarea id="Q4_withHint" name="Q4_withHint" rows="5" style="width: 500px"></textarea>
+      <br>
+      <h2>Question 5</h2>
+      <p>Overall, how much effort did you put into your participation in this study?</p>
+      <input type="radio" name="Q5" value="greatdeal">A great deal of effort<br>
+      <input type="radio" name="Q5" value="alot">A lot of effort<br>
+      <input type="radio" name="Q5" value="moderate">A moderate amount of effort<br>
+      <input type="radio" name="Q5" value="alittle">A little effort<br>
+      <input type="radio" name="Q5" value="none">No effort at all<br>
+      <div style="text-align: center">
+        <button type="button" id="questionnaireNextButton_withHint">Next</button>
       </div>
     </form>
   </div>
