@@ -1,0 +1,39 @@
+---
+title: "diss_v6_behavior_exploring_staySwitch_succFail"
+author: "Katie Cheng"
+date: "5/7/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lme4)
+library(lmerTest) # p-values on lmer
+source("summarySE.R")
+library(corrplot)
+library(plyr) # for ddply, calculating means for histograms
+library(apaTables) # for apa.cor.table
+#library(ggpubr) # for balloon plot
+library("ggalluvial") # for alluvial plot
+
+# differences in avgs btw groups
+# hierarchical: differences btw groups, controlling for participant
+```
+
+```{r import & wrangle}
+
+source("diss_v6_import.R")
+source("diss_v6_wrangle.R")
+
+nrow(df_v6n288_users) # 278 of 288
+```
+
+```{r base rate stay/switch}
+
+
+
+```
+

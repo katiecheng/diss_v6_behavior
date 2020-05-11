@@ -1,0 +1,370 @@
+---
+title: "diss_v6_behavior_analysis"
+author: "Katie Cheng"
+date: "5/1/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lme4)
+library(lmerTest) # p-values on lmer
+source("summarySE.R")
+library(corrplot)
+library(plyr) # for ddply, calculating means for histograms
+library(apaTables) # for apa.cor.table
+#library(ggpubr) # for balloon plot
+library("ggalluvial") # for alluvial plot
+
+# differences in avgs btw groups
+# hierarchical: differences btw groups, controlling for participant
+```
+
+```{r import & wrangle}
+
+source("diss_v6_import.R")
+source("diss_v6_wrangle.R")
+
+# nrow(df_v6n144_users) # 138 of 144
+nrow(df_v6n288_users) # 278 of 288
+```
+
+# data collection checks
+
+```{r how many each condition?}
+
+addmargins(table(df_v6n288_users$condition)) # control 95, expt1 86, expt2 97
+
+```
+
+```{r how many in each condition*outcome?}
+
+addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$interventionOutcome))
+
+```
+
+```{r how many in each condition*prediction*outcome?}
+
+table(condition=df_v6n288_users$condition, prediction=df_v6n288_users$interventionPrediction, outcome=df_v6n288_users$interventionOutcome)
+
+```
+
+
+# Replication
+
+```{r misconception}
+
+# group level
+addmargins(table(prediction=df_v6n288_users$interventionPrediction)) # R 122 (43.8%) E 82 G 74
+
+addmargins(table(prediction=df_v6n288_users$condition, prediction=df_v6n288_users$interventionPrediction)) # driven by control group
+
+# this is the lowest rate of misconception yet
+
+```
+
+```{r generation effect group}
+
+# group level
+addmargins(table(outcome=df_v6n288_users$interventionOutcome)) # R 59 (21%), E 51, G 168 (60.4%)
+
+# this is the highest rate of the generation effect yet (but similar to v5)
+
+```
+
+```{r generation effect individual}
+
+# individual level
+
+# strategy learning
+melt <- tidyr::gather(df_v6n288_users, key="measures", value="mean", interventionTestGenerateScore, interventionTestRestudyScore, factor_key = TRUE) # factor_key preserves order
+means <- summarySE(melt, measurevar="mean", groupvars=c("measures"), na.rm=TRUE, conf.interval=0.95); means
+  
+means %>% ggplot(aes(measures, mean)) + 
+    geom_bar(position=position_dodge(.9), stat="identity") + 
+    geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle = 90))
+
+# Will have to think about this statistical analysis more...
+#melt[c("prolificId", "measures", "mean")]
+summary(lmer(mean ~ measures + (1|prolificId), melt)) # learned more under generate! 
+# G learned 4.2 
+# R learned 3.3
+
+
+# this is similar to what we found v2-v5
+
+```
+
+# Intervention results
+
+## Behavioral Choices
+```{r distribution of raw # generate choices}
+
+# raw count as table
+addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$assessmentStrategyChoiceGenerateCount))
+
+# raw count as histogram
+df_v6n288_users %>% ggplot(aes(assessmentStrategyChoiceGenerateCount, fill=condition)) + geom_histogram(position=position_dodge(), binwidth = 1)
+
+# proportion of group as histogram
+df_v6n288_users %>% ggplot(aes(assessmentStrategyChoiceGenerateCount, fill=condition)) + 
+  geom_histogram(
+    aes(y=c(..count..[..group..==1]/sum(..count..[..group..==1]),
+            ..count..[..group..==2]/sum(..count..[..group..==2]),
+            ..count..[..group..==3]/sum(..count..[..group..==3]))),
+    position=position_dodge(), binwidth = 1) + 
+  ylab("Proportion of group")
+
+# possibly...
+# expt2 makes the most all-G choices, then control, then expt 1
+# control/expt1 make more all-R choices than expt2
+
+```
+
+
+```{r # generate choices by condition}
+
+# all REG feedback # generate choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, df_v6n288_users)) # 0.01383; expt2 choose more generate
+# control chooses G 7.2 times
+# expt1 chooses G 8.7 times
+# expt2 chooses G 10.5 times (more times than not)
+
+
+# broken down by REG outcomes # generate choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, 
+           filter(df_v6n288_users, interventionOutcome=="generate"))) # 0.03516; expt2 choose more generate
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, 
+           filter(df_v6n288_users, interventionOutcome=="restudy"))) # ns
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, 
+           filter(df_v6n288_users, interventionOutcome=="equal"))) # ns
+# expt2 more G choices driven by those who got G feedback
+# yay!
+
+```
+## Success rate as a metric
+```{r success rates at R and G across conditions}
+
+summary(df_v6n288_users[c("assessmentStrategyRestudySuccessRate","assessmentStrategyGenerateSuccessRate")])
+# 47 people never did R
+# 66 people never did G
+# R success rate was med 100%, mean 92%
+# G success rate was med 22%, mean 25%
+
+# so people are generating 7-10 times, and succeeding 1-2 times
+
+
+summary(df_v6n288_users[c("interventionStrategyRestudyScoreRound1","interventionStrategyGenerateScoreRound1")])
+# this is lower than their success at G in the intervention? In any case, not higher
+# there they were generating 10 times, and succeeded ~2-2.5 times
+
+```
+
+
+```{r success rate by condition}
+
+summary(filter(df_v6n288_users, condition=="control")$assessmentStrategyGenerateSuccessRate)
+summary(filter(df_v6n288_users, condition=="expt1")$assessmentStrategyGenerateSuccessRate)
+summary(filter(df_v6n288_users, condition=="expt2")$assessmentStrategyGenerateSuccessRate)
+
+
+# success rate 
+summary(lm(assessmentStrategyGenerateSuccessRate ~ condition, df_v6n288_users)) # ns; success rate is not actually higher...
+# control 25% G success
+# expt1 26% G success
+# expt2 24% G success
+
+summary(lm(assessmentStrategyRestudySuccessRate ~ condition, df_v6n288_users)) # ns; we wouldn't expect it here
+# control 91% R success
+# expt1 93% R success
+# expt2 93% R success
+
+# success rate controlling for intervention strategy success rate
+summary(lm(assessmentStrategyGenerateSuccessRate ~ condition + interventionStrategyGenerateScoreRound1, df_v6n288_users)) # ns; success rate is not actually higher...
+summary(lm(assessmentStrategyRestudySuccessRate ~ condition + interventionStrategyRestudyScoreRound1, df_v6n288_users)) # ns; we wouldn't expect it here
+
+
+```
+## Test scores 
+```{r assessment test score by condition}
+summary(df_v6n288_users$assessmentTestScore)
+
+summary(lm(interventionTestScore ~ condition, df_v6n288_users)) # oh dear. expt 2 has worse scores to begin
+summary(lm(assessmentTestScore ~ condition, df_v6n288_users)) # oh dear. expt 2 has worse scores, at the end as well
+# control scored 9.5 of 20
+# expt1 scored 9.4 of 20
+# expt2 scored 7.4 of 20; sig worse, though this goes away after controlling for interventionTestScore
+
+summary(lm(assessmentTestScore ~ condition + interventionTestScore, df_v6n288_users)) # oh dear. expt 2 has worse scores at the end, even controlling for intervention test score
+
+# control did best...
+
+```
+
+## Final beliefs
+
+## Behavioral Choices
+```{r distribution of raw final beliefs}
+
+# raw count as table
+addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$assessmentBelief))
+
+# raw count as histogram
+df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) + geom_histogram(position=position_dodge(), binwidth = 1)
+
+# proportion of group as histogram
+df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) + 
+  geom_histogram(
+    aes(y=c(..count..[..group..==1]/sum(..count..[..group..==1]),
+            ..count..[..group..==2]/sum(..count..[..group..==2]),
+            ..count..[..group..==3]/sum(..count..[..group..==3]))),
+    position=position_dodge(), binwidth = 1) + 
+  ylab("Proportion of group")
+
+# possibly...
+# expt2 believes no-diff most
+# control believes G most
+
+```
+
+
+```{r final belief by condition}
+
+# all REG feedback final belief
+summary(lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users)) # ns
+# control slightly believes G
+# expt1 slightly believes R
+# expt2 believes equal
+
+# broken down by REG outcomes final belief
+summary(lm(diff_assessmentBeliefRG_num ~ condition, 
+           filter(df_v6n288_users, interventionOutcome=="generate"))) # ns
+summary(lm(diff_assessmentBeliefRG_num ~ condition, 
+           filter(df_v6n288_users, interventionOutcome=="restudy"))) # ns
+summary(lm(diff_assessmentBeliefRG_num ~ condition, 
+           filter(df_v6n288_users, interventionOutcome=="equal"))) # ns; possible that R believes more R
+# expt2 more R belief driven by those who got R feedback
+
+
+
+summary(lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users)) # ns
+
+summary(lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG, df_v6n288_users)) # ns; controlling for predict
+summary(lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionTestOutcomeRG, df_v6n288_users)) # ns; controlling for outcome
+summary(lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users)) # ns; controlling for both prediction & outcome
+```
+
+
+
+```{r checking if expt2 is doing anything...correlations among outcomes}
+
+apa.cor.table(filter(df_v6n288_users, condition=="control")[c("diff_interventionPredictRG", 
+           "diff_interventionTestOutcomeRG",
+           "assessmentStrategyChoiceGenerateCount",
+           "diff_assessmentBeliefRG_num",
+           "assessmentTestScore")])
+
+apa.cor.table(filter(df_v6n288_users, condition=="expt1")[c("diff_interventionPredictRG", 
+           "diff_interventionTestOutcomeRG",
+           "assessmentStrategyChoiceGenerateCount",
+           "diff_assessmentBeliefRG_num",
+           "assessmentTestScore")])
+
+apa.cor.table(filter(df_v6n288_users, condition=="expt2")[c("diff_interventionPredictRG", 
+           "diff_interventionTestOutcomeRG",
+           "assessmentStrategyChoiceGenerateCount",
+           "diff_assessmentBeliefRG_num",
+           "assessmentTestScore")])
+
+```
+
+# Effect of hint
+
+```{r within expt2 group differences in effectiveness and effort}
+
+summary(filter(df_v6n288_users, condition=="expt2")[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+# G and hint-G equally effective
+# G and hint-G more effective than restudy
+
+summary(filter(df_v6n288_users, condition=="expt2")[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+# G > hint-G > restudy effort
+
+# So, G-hint was rated equally as effective, but less effort than G
+
+```
+```{r within expt2 group differences in effort by effectiveness}
+
+# G-hint more effective than G (n=31)
+
+nrow(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num > effectivenessGenerate_num))
+
+summary(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num > effectivenessGenerate_num)[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+
+summary(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num > effectivenessGenerate_num)[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+
+# G-hint equally as effective as G (n=40)
+
+nrow(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num == effectivenessGenerate_num))
+
+summary(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num == effectivenessGenerate_num)[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+
+summary(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num == effectivenessGenerate_num)[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+
+
+# G-hint less effective than G (n=10)
+
+nrow(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num < effectivenessGenerate_num))
+
+summary(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num < effectivenessGenerate_num)[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+
+summary(filter(df_v6n288_users, condition=="expt2" & effectivenessGenerate_withHint_num < effectivenessGenerate_num)[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+
+# most thought the two were equally effective, or that G-hint was more effective
+# not a clear relationship between effort and effectiveness
+
+```
+```{r within expt2 group differences in effectiveness by effort}
+
+# G-hint more effort than G (n=3)
+
+nrow(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num > effortGenerate_num))
+
+summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num > effortGenerate_num)[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+
+summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num > effortGenerate_num)[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+
+# G-hint equally as effortful as G (n=47)
+
+nrow(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num == effortGenerate_num))
+
+summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num == effortGenerate_num)[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+
+summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num == effortGenerate_num)[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+
+
+# G-hint less effort than G (n=31)
+
+nrow(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num < effortGenerate_num))
+
+summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num < effortGenerate_num)[c("effectivenessRestudy_num", "effectivenessGenerate_num", "effectivenessGenerate_withHint_num")])
+
+summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num < effortGenerate_num)[c("effortRestudy_num", "effortGenerate_num", "effortGenerate_withHint_num")])
+
+# most thought the two were equally effective, or that G-hint was more effective
+# not a clear relationship between effort and effectiveness
+
+```
+
+```{r does G-hint affect expt2's opinions toward G vs. expt1's opinons?}
+
+summary(lm(effectivenessGenerate_num ~ condition, df_v6n288_users)) # 0.1062; expt2 < control
+summary(lm(effortGenerate_num ~ condition, df_v6n288_users)) # ns
+
+# existence of G-hint may drive down ratings of effectiveness of G
+
+```
+

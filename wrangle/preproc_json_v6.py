@@ -2,6 +2,7 @@ import sys
 import json
 import pandas as pd
 import Levenshtein as lev
+import numpy as np
 
 ### For v5 version deployed 2020-03-10, with n=48 and new behavioral measure
 
@@ -21,12 +22,24 @@ df_prolific = pd.read_csv(
     versionSampleSuffix=versionSampleSuffix)
 )
 
+# df_prolific = pd.read_csv(
+#   '../data/raw/{datePrefix}_prolific_export_{versionSampleSuffix}.csv'.format(
+#     datePrefix='2020-05-02',
+#     versionSampleSuffix='v6n288')
+# )
+
 ### Read Firebase data
 with open(
-  '../data/raw/{datePrefix}_diss-v5-behavior-export_{versionSampleSuffix}.json'.format(
+  '../data/raw/{datePrefix}_diss-v6-behavior-export_{versionSampleSuffix}.json'.format(
     datePrefix=datePrefix,
     versionSampleSuffix=versionSampleSuffix)) as f:
   data=json.load(f)
+
+with open(
+'../data/raw/{datePrefix}_diss-v6-behavior-export_{versionSampleSuffix}.json'.format(
+  datePrefix='2020-05-02',
+  versionSampleSuffix='v6n288')) as f:
+    data=json.load(f)
 
 users_dict = data['users']
 items_dict = data['items']
@@ -243,6 +256,7 @@ effectivenessRating = {
 
 df_users['effectivenessRestudy_num'] = [effectivenessRating[rating] for rating in df_users['effectivenessRestudy'] ] 
 df_users['effectivenessGenerate_num'] = [effectivenessRating[rating] for rating in df_users['effectivenessGenerate'] ] 
+df_users['effectivenessGenerate_withHint_num'] = [effectivenessRating[rating] for rating in df_users['effectivenessGenerate_withHint'] ] 
 
 # df_users['effectivenessRestudy_num'] = pd.to_numeric(df_users['effectivenessRestudy_num'], errors='coerce')
 # df_users['effectivenessGenerate_num'] = pd.to_numeric(df_users['effectivenessGenerate_num'], errors='coerce')
@@ -259,6 +273,7 @@ effortRating = {
 
 df_users['effortRestudy_num'] = [effortRating[rating] for rating in df_users['effortRestudy'] ] 
 df_users['effortGenerate_num'] = [effortRating[rating] for rating in df_users['effortGenerate'] ] 
+df_users['effortGenerate_withHint_num'] = [effortRating[rating] for rating in df_users['effortGenerate_withHint'] ] 
 df_users['effort_num'] = [effortRating[rating] for rating in df_users['effort'] ] 
 
 
@@ -376,6 +391,125 @@ for n in range(1, 21):
   itemConsistencyNames.append("changeRelativeToOutcomeBehavior_%d_num" %n)
   itemAlignmentNames.append("behaviorAlignedWithOutcome_%d_num" %n)
 
+
+"""
+Calculate the number of switches
+"""
+
+# vertical in items; make it horizontal in users, for each user, one column for each item strategy
+# replace empty string with np.nan so that it will be recognized by notnull()
+notNullBooleanSeries = df_items.assessmentStrategyOrder.replace("",np.nan,inplace=False).notnull()
+# subset to these three columns (may not be necessary)
+# df_items_assessmentStrategies = df_items[notNullBooleanSeries].reset_index()[['prolificId','assessmentStrategyOrder','assessmentStrategy']]
+df_items_assessmentStrategies = df_items[notNullBooleanSeries].reset_index()
+# create a pivot table, with prolificId as index, assessStratOrder as columns, and assessStrat as values
+df_stratsToColumns = df_items_assessmentStrategies.pivot(index='prolificId', columns='assessmentStrategyOrder', values='assessmentStrategy')
+df_stratsToColumns = df_stratsToColumns.replace('restudy', 'R').replace('generate', 'G')
+
+# create a string of strategy choices
+df_stratsToColumns['assessmentStrategySequence'] = df_stratsToColumns.apply(
+    lambda x: ''.join(x.dropna()), # join can join dfs with different indices
+    axis=1 # apply to each row
+)
+
+# process each string and create a new var: every switch from R->G or G->R is a switch
+df_stratsToColumns['assessmentStrategySwitches'] = df_stratsToColumns['assessmentStrategySequence'].apply(
+    lambda x: x.count('RG') + x.count('GR')
+)
+
+# merge to merge on indices! Wow it worked
+df_users = df_users.merge(df_stratsToColumns, left_on="prolificId", right_on="prolificId")
+
+# check
+# print(df_users[['assessmentStrategySequence','assessmentStrategySwitches']])
+
+
+"""
+Create a string of strategy accuracies
+"""
+# vertical in items; make it horizontal in users, for each user, one column for each item accuracy
+df_accuraciesToColumns = df_items_assessmentStrategies.pivot(index='prolificId', columns='assessmentStrategyOrder', values='assessmentStrategyAccuracy')
+# create a string of strategy choices
+df_accuraciesToColumns['assessmentAccuracySequence'] = df_accuraciesToColumns.apply(
+    lambda x: ''.join(x.dropna().astype(int).astype(str)),
+    axis=1 # apply to each row
+)
+
+df_users = df_users.merge(df_accuraciesToColumns, left_on="prolificId", right_on="prolificId")
+
+# check
+# print(df_users[['assessmentAccuracySequence']])
+
+
+"""
+Probability next is an R given G-fail vs. G-success
+
+make sequence into a list of lists
+[['G', 1], ['G', 0], ...]
+
+iterate through list
+maintain counts:
+# G0s
+# followed by R
+# followed by G
+# no choice to follow
+for each ['G', 0], if index is 19, no choice to follow, else if followed by R +=R, else +=G
+"""
+# two strings, split them into lists of characters, zip them into a list of lists
+df_users['assessmentStratAcc'] = df_users[['assessmentStrategySequence','assessmentAccuracySequence']].apply(
+    lambda x: np.array(zip(
+            list(str(x['assessmentStrategySequence'])), 
+            list(str(x['assessmentAccuracySequence']))
+            )) if pd.notnull(x['assessmentStrategySequence']) else x['assessmentStrategySequence'],
+    axis=1 # apply to each row
+)
+# check
+# print(df_users['assessmentStratAcc'])
+
+def helperFunc(stratAccList, strategy, accuracy):
+    numStratAcc = 0
+    numStratAcc_exclude20 = 0
+    numStay = 0
+    numSwitch = 0
+    for i in range(20):
+        if pd.isnull(np.array(stratAccList)).all():
+            # had to do isnull instead of notnull, else breaks
+            pass 
+        elif len(stratAccList) < 20:
+            pass
+        else:
+            if (stratAccList[i] == [strategy, accuracy]).all():
+                if i < 19:
+                    numStratAcc += 1
+                    numStratAcc_exclude20 += 1
+                    if stratAccList[i+1][0] == strategy:
+                        numStay += 1
+                    else:
+                        numSwitch += 1
+                else:
+                    numStratAcc += 1
+    if numStratAcc_exclude20 > 0:
+        probStay = numStay / float(numStratAcc_exclude20)
+        probSwitch = numSwitch / float(numStratAcc_exclude20)
+    else:
+        probStay = float("nan")
+        probSwitch = float("nan")
+    return (numStratAcc, probStay, probSwitch)
+
+
+def calcProbabilityStaySwitch(df, strategy, accuracy):
+    df_users['howMany_%s_%s' %(strategy, accuracy)], \
+    df_users['probStay_after_%s_%s' %(strategy, accuracy)], \
+    df_users['probSwitch_after_%s_%s' %(strategy, accuracy)] = \
+    zip(*df_users['assessmentStratAcc'].map(lambda seq: helperFunc(seq, strategy, accuracy)))
+
+
+calcProbabilityStaySwitch(df_users, "G", "0")
+calcProbabilityStaySwitch(df_users, "R", "0")
+calcProbabilityStaySwitch(df_users, "G", "1")
+calcProbabilityStaySwitch(df_users, "R", "1")
+
+
 ### sort on column names
 df_users = df_users[[
   "startDateTime",
@@ -413,6 +547,22 @@ df_users = df_users[[
   "assessmentStrategyChoiceGenerateCount",
   "assessmentStrategyRestudyScore",
   "assessmentStrategyGenerateScore",
+  "assessmentStrategySequence",
+  "assessmentStrategySwitches",
+  # "assessmentAccuracySequence",
+  "assessmentStratAcc",
+  "howMany_G_1",
+  "probStay_after_G_1",
+  "probSwitch_after_G_1",
+  "howMany_G_0",
+  "probStay_after_G_0",
+  "probSwitch_after_G_0",
+  "howMany_R_1",
+  "probStay_after_R_1",
+  "probSwitch_after_R_1",
+  "howMany_R_0",
+  "probStay_after_R_0",
+  "probSwitch_after_R_0",
   "assessmentTestScore",
   "assessmentTestRestudyScore",
   "assessmentTestGenerateScore",
@@ -430,6 +580,10 @@ df_users = df_users[[
   "effortGenerate",
   "effortGenerate_num",
   # "howManyGenerate",
+  "effectivenessGenerate_withHint",
+  "effectivenessGenerate_withHint_num",
+  "effortGenerate_withHint",
+  "effortGenerate_withHint_num",
   "chosenStrategy",
   "assessmentBelief",
   "diff_assessmentBeliefRG_num",
@@ -488,6 +642,8 @@ df_items = df_items[[
 ### Link item-level data to user-level data, for a user-level analysis file
 ### sorted on column names, reverse alpha 
 ### join on index, keeping hierarchy
+# print("users index: ", df_users.index)
+# print("items index: ", df_items.index)
 df_users_items = df_users.join(df_items, how='inner')
 
 
@@ -514,7 +670,7 @@ df_users = df_prolific.join(df_users, how='inner')
 
 ### Output to csv for R
 df_users_items.to_csv(
-  "../data/{datePrefix}_diss-v5-behavior_df-users-items_{versionSampleSuffix}.csv".format(
+  "../data/{datePrefix}_diss-v6-behavior_df-users-items_{versionSampleSuffix}.csv".format(
     datePrefix=datePrefix,
     versionSampleSuffix=versionSampleSuffix
   ), encoding='utf-8'
@@ -522,7 +678,7 @@ df_users_items.to_csv(
 
 ### Output to csv for R, users df only
 df_users.to_csv(
-  "../data/{datePrefix}_diss-v5-behavior_df-users-items_{versionSampleSuffix}_users.csv".format(
+  "../data/{datePrefix}_diss-v6-behavior_df-users-items_{versionSampleSuffix}_users.csv".format(
     datePrefix=datePrefix,
     versionSampleSuffix=versionSampleSuffix
   ), encoding='utf-8'
