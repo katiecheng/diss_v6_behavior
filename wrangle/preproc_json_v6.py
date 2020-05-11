@@ -442,6 +442,66 @@ df_users = df_users.merge(df_accuraciesToColumns, left_on="prolificId", right_on
 
 
 """
+Probability of stay/switch after R and after G (base rate)
+
+maintain count?
+Gs followed by Gs?
+Rs followed by Rs?
+
+
+GRGRGRRRGGGRG
+
+Prob stay after G
+# GGs out of Gs
+
+GR 1111
+GG 11
+skip the final G
+
+of all the G's that could have something follow (6)
+stay 2/6 = 33%
+switch 4/6 = 66%
+
+"""
+def calcProbabilityStaySwitch(stratString, strategy):
+  numStrat = 0
+  numStrat_exclude20 = 0
+  numStay = 0
+  numSwitch = 0
+  for i in range(20):
+    if len(stratString) < 20:
+      pass
+    else:
+      if (stratString[i] == strategy):
+        if i < 19:
+          numStrat += 1
+          numStrat_exclude20 += 1
+          if (stratString[i+1] == strategy):
+            numStay += 1
+          else:
+            numSwitch += 1
+        else:
+          numStrat += 1
+  if numStrat_exclude20 > 0:
+    probStay = numStay / float(numStrat_exclude20)
+    probSwitch = numSwitch / float(numStrat_exclude20)
+  else:
+    probStay = float("nan")
+    probSwitch = float("nan")
+  return (probStay, probSwitch)
+
+
+def createProbabilityStaySwitchVars(strategy):
+  df_users['probStay_after_%s' %(strategy)], \
+  df_users['probSwitch_after_%s' %(strategy)] = \
+  zip(*df_users['assessmentStrategySequence'].map(lambda seq: calcProbabilityStaySwitch(seq, strategy)))
+
+
+createProbabilityStaySwitchVars("G")
+createProbabilityStaySwitchVars("R")
+
+
+"""
 Probability next is an R given G-fail vs. G-success
 
 make sequence into a list of lists
@@ -466,7 +526,7 @@ df_users['assessmentStratAcc'] = df_users[['assessmentStrategySequence','assessm
 # check
 # print(df_users['assessmentStratAcc'])
 
-def helperFunc(stratAccList, strategy, accuracy):
+def calcProbabilityStaySwitchSuccFail(stratAccList, strategy, accuracy):
     numStratAcc = 0
     numStratAcc_exclude20 = 0
     numStay = 0
@@ -497,17 +557,17 @@ def helperFunc(stratAccList, strategy, accuracy):
     return (numStratAcc, probStay, probSwitch)
 
 
-def calcProbabilityStaySwitch(df, strategy, accuracy):
+def createProbabilityStaySwitchSuccFailVars(strategy, accuracy):
     df_users['howMany_%s_%s' %(strategy, accuracy)], \
     df_users['probStay_after_%s_%s' %(strategy, accuracy)], \
     df_users['probSwitch_after_%s_%s' %(strategy, accuracy)] = \
-    zip(*df_users['assessmentStratAcc'].map(lambda seq: helperFunc(seq, strategy, accuracy)))
+    zip(*df_users['assessmentStratAcc'].map(lambda seq: calcProbabilityStaySwitchSuccFail(seq, strategy, accuracy)))
 
 
-calcProbabilityStaySwitch(df_users, "G", "0")
-calcProbabilityStaySwitch(df_users, "R", "0")
-calcProbabilityStaySwitch(df_users, "G", "1")
-calcProbabilityStaySwitch(df_users, "R", "1")
+createProbabilityStaySwitchSuccFailVars("G", "0")
+createProbabilityStaySwitchSuccFailVars("R", "0")
+createProbabilityStaySwitchSuccFailVars("G", "1")
+createProbabilityStaySwitchSuccFailVars("R", "1")
 
 
 ### sort on column names
@@ -549,6 +609,10 @@ df_users = df_users[[
   "assessmentStrategyGenerateScore",
   "assessmentStrategySequence",
   "assessmentStrategySwitches",
+  "probStay_after_G",
+  "probSwitch_after_G",
+  "probStay_after_R",
+  "probSwitch_after_R",
   # "assessmentAccuracySequence",
   "assessmentStratAcc",
   "howMany_G_1",
