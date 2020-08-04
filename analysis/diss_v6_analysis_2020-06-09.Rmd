@@ -1,0 +1,906 @@
+---
+title: "diss_v6_analysis_2020-06-09: Claire Stats Consulting"
+author: "Katie Cheng"
+date: "6/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lme4)
+library(lmerTest) # p-values on lmer
+source("summarySE.R")
+library(corrplot)
+library(plyr) # for ddply, calculating means for histograms
+library(apaTables) # for apa.cor.table
+#library(ggpubr) # for balloon plot
+library("ggalluvial") # for alluvial plot
+library(MASS) # stepAIC
+
+# differences in avgs btw groups
+# hierarchical: differences btw groups, controlling for participant
+```
+
+```{r import & wrangle}
+
+source("diss_v6_import.R")
+source("diss_v6_wrangle.R")
+
+# nrow(df_v6n144_users) # 138 of 144
+nrow(df_v6n288_users) # 278 of 288
+
+df_v6n288_users_sub <- df_v6n288_users[c(
+                  "condition",                                     # experimental condition (categ: control, expt1, expt2)
+                  "interventionPredictRestudy",                    # predicted score under restudy strategy (cont: 0-10)
+                  "interventionPredictGenerate",                   # predicted score under generate strategy (cont: 0-10)
+                  "diff_interventionPredictRG",                    # predicted difference restudy-generate (cont: -10 to 10)
+                  "interventionPrediction",                        # prediction for best strategy (categ: restudy, equal, generate)
+                  "interventionTestRestudyScore",                  # actual score under restudy strategy (cont: 0-10)
+                  "interventionTestGenerateScore",                 # actual score under generate strategy (cont: 0-10)
+                  "diff_interventionTestOutcomeRG",                # actual difference restudy-generate (cont: -10 to 10)
+                  "interventionOutcome",                           # actual best strategy (categ: restudy, equal, generate)
+                  "diff_interventionRestudyScoreToPrediction",     # difference between actual restudy score and predicted (cont: -10 to 10)
+                  "diff_interventionGenerateScoreToPrediction",    # difference between actual generate score and predicted (cont: -10 to 10)
+                  "assessmentStrategyChoiceGenerateCount",         # DV: number of generate choices (cont: 0-20)
+                  "assessmentStrategyGenerateSuccessCount",        # number of generate strategy successes (cont: 0-20)
+                  "assessmentStrategyGenerateFailureCount",        # number of generate strategy failures (cont: 0-20)
+                  "assessmentTestScore",                           # DV: final test score (cont: 0-20)
+                  "effectivenessRestudy",                          # final belief on the effectiveness of restudy strategy (cont: 0-1.69)
+                  "effectivenessGenerate",                         # final belief on the effectiveness of generate strategy (cont: 0-1.69)
+                  "diff_assessmentBeliefRG_num",                   # DV: final belief for difference restudy-generate (cont: -1.69 to 1.69)
+                  "assessmentBelief"                               # DV: final belief for best strategy (categ: restudy, equal, generate)
+                  )]
+
+#write.csv(subsetVars,fs::path(dir_data, "2020-05-02_diss-v6-behavior_df-users-items_v6n288_afterWrangle_subsetVars.csv"), row.names = FALSE)
+
+# create dataset for CPA in SPSS
+df_v6n288_users_subCPA <- df_v6n288_users[c(
+                  "condition",                                     # experimental condition (categ: control, expt1, expt2)
+                  "age",
+                  "diff_interventionPredictRG",                    # predicted difference restudy-generate (cont: -10 to 10)
+                  "interventionPrediction",                        # prediction for best strategy (categ: restudy, equal, generate)\
+                  "diff_interventionTestOutcomeRG",                # actual difference restudy-generate (cont: -10 to 10)
+                  "interventionOutcome",                           # actual best strategy (categ: restudy, equal, generate)
+                  "interventionTestScore",                         # total score on intervention test
+                  "assessmentStrategyChoiceGenerateCount",         # DV: number of generate choices (cont: 0-20)
+                  "assessmentTestScore",                           # DV: final test score (cont: 0-20)
+                  "diff_assessmentBeliefRG_num",                   # DV: final belief for difference restudy-generate (cont: -1.69 to 1.69)
+                  "assessmentBelief"                               # DV: final belief for best strategy (categ: restudy, equal, generate)
+                  )]
+levels(df_v6n288_users_subCPA$condition) <- c(0,1,2)
+levels(df_v6n288_users_subCPA$interventionPrediction) <- c(0,1,2)
+levels(df_v6n288_users_subCPA$interventionOutcome) <- c(0,1,2)
+levels(df_v6n288_users_subCPA$assessmentBelief) <- c(0,1,2)
+df_v6n288_users_subCPA$diff_interventionPredictRG <- -1 * df_v6n288_users_subCPA$diff_interventionPredictRG
+df_v6n288_users_subCPA$diff_interventionTestOutcomeRG <- -1 * df_v6n288_users_subCPA$diff_interventionTestOutcomeRG
+df_v6n288_users_subCPA$diff_assessmentBeliefRG_num <- -1 * df_v6n288_users_subCPA$diff_assessmentBeliefRG_num
+names(df_v6n288_users_subCPA) <- c("group012", "age", "predictN", "predictC", "outcomeN", "outcomeC", "quiz1", "numGen", "quiz2", "beliefN", "beliefC")
+write.csv(df_v6n288_users_subCPA,fs::path(dir_data, "Katie_v6n288_CPA.csv"), row.names = FALSE)
+
+df_v6n288_users_predRoutG <- filter(df_v6n288_users, interventionPrediction=="restudy" & interventionOutcome=="generate"); nrow(df_v6n288_users_predRoutG)
+
+
+```
+```{r simple condition only}
+
+# predict choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition, df_v6n288_users))
+
+df_v6n288_users %>% ggplot(aes(y=assessmentStrategyChoiceGenerateCount, x=condition, fill=condition)) + geom_boxplot()
+
+
+# predict beliefs
+summary(lm(diff_assessmentBeliefRG_num ~ 1 + condition, df_v6n288_users))
+
+df_v6n288_users %>% ggplot(aes(y=diff_assessmentBeliefRG_num, x=condition, fill=condition)) + geom_boxplot()
+
+# predict learning outcomes
+summary(lm(assessmentTestScore ~ 1 + condition, df_v6n288_users))
+
+
+df_v6n288_users %>% ggplot(aes(y=interventionTestScore, x=condition, fill=condition)) + geom_boxplot()
+df_v6n288_users %>% ggplot(aes(y=assessmentTestScore, x=condition, fill=condition)) + geom_boxplot()
+
+```
+
+```{r correlation matrix of outcomes}
+
+apa.cor.table(df_v6n288_users[c(
+  "assessmentStrategyChoiceGenerateCount",
+  "diff_assessmentBeliefRG_num",
+  "assessmentTestScore"
+  )])
+
+```
+
+
+```{r with covariates}
+
+# predict choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition, df_v6n288_users))
+
+# predict beliefs
+summary(lm(diff_assessmentBeliefRG_num ~ 1 + 
+             condition + 
+             diff_interventionPredictRG, df_v6n288_users))
+
+# predict learning outcomes, diff testScore by condition, with intervTestScore as covariate
+summary(lm(assessmentTestScore ~ 1 + 
+             condition + 
+             interventionTestScore, df_v6n288_users))
+
+# diff slopes; diff testScore by condition, diff effect of intervTestScore by condition
+summary(lm(assessmentTestScore ~ 1 + 
+             condition + 
+             condition * interventionTestScore +
+             interventionTestScore, df_v6n288_users))
+
+# diff testScore by condition, diff effect of intervTestScore by condition, minus main effect of interventionTestScore
+summary(lm(assessmentTestScore ~ 1 + 
+             condition + 
+             condition * interventionTestScore -
+             interventionTestScore, df_v6n288_users))
+
+# diff testScore by condition, diff effect of genCount by condition, minus intercept, minus main effect of genCount
+summary(lm(assessmentTestScore ~ -1 + 
+             assessmentStrategyChoiceGenerateCount * condition - 
+             assessmentStrategyChoiceGenerateCount +
+             interventionTestScore, df_v6n288_users))
+
+# diff testScore by condition, with interveTestScore as covariate, and genCount as covariate, 
+summary(lm(assessmentTestScore ~ 1 + 
+             condition + 
+             assessmentStrategyChoiceGenerateCount + 
+             interventionTestScore, df_v6n288_users))
+
+# one genCount*condition
+summary(lm(assessmentTestScore ~ 1 + 
+             condition + 
+             assessmentStrategyChoiceGenerateCount + 
+             assessmentStrategyChoiceGenerateCount * condition +
+             interventionTestScore, df_v6n288_users))
+
+# introductin new var that makes sense
+# not controlling for as much (e.g. interv test score corr w/group, etc)
+df_v6n288_users$diff_assesIntervTestScore <- df_v6n288_users$assessmentTestScore - df_v6n288_users$interventionTestScore
+
+summary(lm(diff_assesIntervTestScore ~ 1 + condition, df_v6n288_users))
+
+# difference, adding residual variance (wouldn't use this model; just doing to see)
+summary(lm(diff_assesIntervTestScore ~ 1 + 
+             condition + 
+             interventionTestScore, df_v6n288_users))
+
+# difference, adding choice as covar
+# diff is a fn of their condition and their generateChoices (more generateChoices, more improvement in test scores)
+summary(lm(diff_assesIntervTestScore ~ 1 + 
+             condition + 
+             assessmentStrategyChoiceGenerateCount, df_v6n288_users))
+
+# add slopes per condition
+# condition effect genCount and test score
+summary(lm(diff_assesIntervTestScore ~ 1 + 
+             condition + 
+             condition * assessmentStrategyChoiceGenerateCount + 
+             assessmentStrategyChoiceGenerateCount, df_v6n288_users))
+
+
+# everything corr, so look at relationship in each condition
+# not sharing intercept
+# removing main effect of condition
+summary(lm(diff_assesIntervTestScore ~ 1 + 
+             assessmentStrategyChoiceGenerateCount, filter(df_v6n288_users, condition=="control")))
+summary(lm(diff_assesIntervTestScore ~ 1 + 
+             assessmentStrategyChoiceGenerateCount, filter(df_v6n288_users, condition=="expt1")))
+summary(lm(diff_assesIntervTestScore ~ 1 + 
+             assessmentStrategyChoiceGenerateCount, filter(df_v6n288_users, condition=="expt2")))
+# all so correlated
+# can't interpret relaitonships btw vars independently
+
+# removed intercept
+# removed generateCount
+# as if fit model independently for each group
+summary(lm(diff_assesIntervTestScore ~ -1 + 
+             assessmentStrategyChoiceGenerateCount * condition - 
+             assessmentStrategyChoiceGenerateCount, df_v6n288_users))
+
+# account for mult hyp correction; account for testing 3 groups
+p.adjust(c(0.1292, 0.0468, 0.0258), method="BH")
+
+```
+
+```{r with aspects of feedback}
+
+# predict choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ 1 + 
+             condition +
+             condition * diff_interventionPredictRG, df_v6n288_users))
+
+# predict beliefs
+summary(lm(diff_assessmentBeliefRG_num ~ 1 + 
+             condition + 
+             condition * diff_interventionPredictRG + 
+             diff_interventionPredictRG, df_v6n288_users))
+
+# predict learning outcomes
+summary(lm(assessmentTestScore ~ 1 + 
+             condition + 
+             condition * diff_interventionPredictRG + 
+             interventionTestScore, df_v6n288_users))
+```
+
+```{r variables}
+                  # "condition",                                     # experimental condition (categ: control, expt1, expt2)
+                  # "interventionPredictRestudy",                    # predicted score under restudy strategy (cont: 0-10)
+                  # "interventionPredictGenerate",                   # predicted score under generate strategy (cont: 0-10)
+                  # "diff_interventionPredictRG",                    # predicted difference restudy-generate (cont: -10 to 10)
+                  # "interventionPrediction",                        # prediction for best strategy (categ: restudy, equal, generate)
+                  # "interventionTestRestudyScore",                  # actual score under restudy strategy (cont: 0-10)
+                  # "interventionTestGenerateScore",                 # actual score under generate strategy (cont: 0-10)
+                  # "interventionTestScore",                 # actual score under both strategies (cont: 0-20)
+                  # "diff_interventionTestOutcomeRG",                # actual difference restudy-generate (cont: -10 to 10)
+                  # "interventionOutcome",                           # actual best strategy (categ: restudy, equal, generate)
+                  # "diff_interventionRestudyScoreToPrediction",     # difference between actual restudy score and predicted (cont: -10 to 10)
+                  # "diff_interventionGenerateScoreToPrediction",    # difference between actual generate score and predicted (cont: -10 to 10)
+                  # "assessmentStrategyGenerateSuccessCount",        # number of generate strategy successes (cont: 0-20)
+                  # "assessmentStrategyGenerateFailureCount",        # number of generate strategy failures (cont: 0-20)
+                  # "assessmentStrategyChoiceGenerateCount",         # DV: number of generate choices (cont: 0-20)
+                  # "assessmentTestScore",                           # DV: final test score (cont: 0-20)
+                  # "effectivenessRestudy",                          # final belief on the effectiveness of restudy strategy (cont: 0-1.69)
+                  # "effectivenessGenerate",                         # final belief on the effectiveness of generate strategy (cont: 0-1.69)
+                  # "diff_assessmentBeliefRG_num",                   # DV: final belief for difference restudy-generate (cont: -1.69 to 1.69)
+                  # "assessmentBelief"                               # DV: final belief for best strategy (categ: restudy, equal, generate)
+```
+
+```{r}
+
+
+# >> Things that matter irrespective of condition:
+# 
+# BEHAVIOR (genCountBehavior)
+# ~ predictionRG (-)
+# ~ outcomeRG (-)
+# *NOT* gentopredict, restopredict
+# ~ genSuccessRate (+)
+#   
+# BELIEF (finalBeliefRG)
+# ~ predictionRG (+)
+# ~ outcomeRG (+)
+# *NOT* restopredict, gentopredict
+# ~ genSuccessRate(+)
+# ~ genCountBehavior (+)
+# 
+# TEST
+# *NOT* predictionRG
+# ~ outcomeRG (-)
+# ~ restopredict (+)
+# ~ gentopredict (+)
+# ~ finalBeliefRG (-)
+# ~ genSuccessRate (+)
+# ~ genCountBehavior (+)
+# ~ interventionTest (+)
+# 
+# >> controlling for
+# initial ability
+# prior beliefs
+# 
+# >> Condition predict:
+# behavior? yes, more G
+# beliefs? no
+# learning outcomes? no
+# 
+# >> Condition interacting with (relationship differs by condition?)
+# outcomeRG
+# size of outcomeRG difference
+# 
+# genCountBehavior ~ condition * predictRG * outcomeRG * genSuccess 
+# beliefs ~ condition * predictRG * outcomeRG * genSuccess * genCountBehavior
+# testOutcomes ~ condition * predictRG * outcomeRG * genSuccess * genCountBehavior * interventionTest; multiple hyp correction
+
+```
+
+```{r}
+
+# behav
+apa.cor.table(df_v6n288_users[c(
+  "interventionTestScore",
+  "diff_interventionPredictRG",
+  "diff_interventionTestOutcomeRG",
+  "diff_interventionRestudyScoreToPrediction",
+  "diff_interventionGenerateScoreToPrediction",
+  "assessmentStrategyRestudySuccessRate",
+  "assessmentStrategyGenerateSuccessRate",
+  "assessmentStrategyChoiceGenerateCount",
+  "changeRelativeToOutcomeBehavior_num"
+  )])
+
+# belief
+apa.cor.table(df_v6n288_users[c(
+  "interventionTestScore",
+  "diff_interventionPredictRG",
+  "diff_interventionTestOutcomeRG",
+  "diff_interventionRestudyScoreToPrediction",
+  "diff_interventionGenerateScoreToPrediction",
+  "assessmentStrategyRestudySuccessRate",
+  "assessmentStrategyGenerateSuccessRate",
+  "diff_assessmentBeliefRG_num",
+  "changeRelativeToOutcome_num"
+)])
+
+# learning
+apa.cor.table(df_v6n288_users[c(
+  "interventionTestScore",
+  "diff_interventionPredictRG",
+  "diff_interventionTestOutcomeRG",
+  "diff_interventionRestudyScoreToPrediction",
+  "diff_interventionGenerateScoreToPrediction",
+  "diff_assessmentBeliefRG_num",
+  "changeRelativeToOutcome_num",
+  "assessmentStrategyRestudySuccessRate",
+  "assessmentStrategyGenerateSuccessRate",
+  "assessmentStrategyChoiceGenerateCount",
+  "changeRelativeToOutcomeBehavior_num",
+  "assessmentTestScore"
+  )])
+```
+
+
+
+
+
+```{r model build generateCount}
+
+m1 <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition, df_v6n288_users); summary(m1)
+m2a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG, df_v6n288_users); summary(m2a)
+#m2b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition * diff_interventionPredictRG, df_v6n288_users); summary(m2b) # in expt1, no relation prediction/genChoice
+m3a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3a)
+#m3b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition * diff_interventionPredictRG + condition * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3b) # in expt1, no relation prediction/genChoice
+#m4a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + diff_interventionRestudyScoreToPrediction, df_v6n288_users); summary(m4a)
+#m5a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m5a)
+
+#anova(m1,m2a,m2b,m3a,m3b)
+#anova(m1,m2a,m3a,m3b)
+anova(m1,m2a,m3a)
+
+# Conclusions from this round of model building:
+## condition, predictRG, and outcomeRG all predict genCount
+## predictRG/outcomeRG don't interact with condition
+
+# to look at experience of success, we have to subset to those who have a generateSuccessRate (those who ever chose generate), n=212
+df_v6n288_users_choseGen <- filter(df_v6n288_users, !is.na(assessmentStrategyGenerateSuccessRate))
+nrow(df_v6n288_users_choseGen) # n=212
+
+m1 <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition, df_v6n288_users_choseGen); summary(m1) # the model with just condition is n.s. in this subgroup
+m2a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG, df_v6n288_users_choseGen); summary(m2a)
+m3a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users_choseGen); summary(m3a)
+m6a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + assessmentStrategyGenerateSuccessRate, df_v6n288_users_choseGen); summary(m6a)
+m6b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + condition*assessmentStrategyGenerateSuccessRate, df_v6n288_users_choseGen); summary(m6b)
+
+#anova(m1,m2a,m3a,m6a,m6b)
+anova(m1,m2a,m3a,m6a)
+
+# Conclusions from this round of model building:
+## (condition), predictRG, outcomeRG, and genSuccessRate all predict genCount
+## predictRG/outcomeRG/genSuccessRate don't interact with condition
+
+summary(stepAIC(lm(assessmentStrategyChoiceGenerateCount ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="forward", trace=TRUE))
+
+summary(stepAIC(lm(assessmentStrategyChoiceGenerateCount ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="backward", trace=TRUE))
+
+summary(stepAIC(lm(assessmentStrategyChoiceGenerateCount ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="both", trace=TRUE))
+
+
+# what if i had done this with interventionTest as a covariate?
+
+m1 <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore, df_v6n288_users); summary(m1)
+m2a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionPredictRG, df_v6n288_users); summary(m2a)
+#m2b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + condition * diff_interventionPredictRG, df_v6n288_users); summary(m2b) # in expt1, no relation prediction/genChoice
+#m2c <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore * diff_interventionPredictRG, df_v6n288_users); summary(m2c)
+m3a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3a)
+#m3b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionPredictRG + condition * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3b) # in expt1, no relation prediction/genChoice
+#m3c <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionPredictRG * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3c)
+
+#anova(m1,m2a,m2b,m3a,m3b)
+anova(m1,m2a,m3a)
+
+m4a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionRestudyScoreToPrediction, df_v6n288_users); summary(m4a)
+#m4b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + condition * diff_interventionRestudyScoreToPrediction, df_v6n288_users); summary(m4b)
+m4c <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionRestudyScoreToPrediction + diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m4c)
+#m4d <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionRestudyScoreToPrediction + condition * diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m4d)
+m5a <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m5a)
+#m5b <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + condition * diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m5b)
+m5c <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionRestudyScoreToPrediction + diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m5c) # same as m4c
+#m5d <- lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + interventionTestScore + diff_interventionRestudyScoreToPrediction + condition *  diff_interventionGenerateScoreToPrediction, df_v6n288_users); summary(m5d) # same as m4d
+
+anova(m1,m4a,m4c)
+anova(m1,m5a,m5c)
+
+# using interventionTestScore as covariate (prior ability)?
+# which of these two to enter into the model first? Doesn't make a difference; both enter
+# intervRestudyScore not predictive until use intervTestScore as a covariate. What does this mean? (holding ability constant, more R exceeds prediction, less G. If ability is not held constant...no relationship between diffRpred and genChoice; it looks like there's no relationship until you control for ability, then the pattern emerges). Or inversely, the worse you do on R than predicted, the more you choose generate (plot to see which it is?)
+
+```
+
+```{r model build consistency of behavior}
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="forward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             #assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="backward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             #assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+
+# with interactions
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             condition*assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="forward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             #condition*assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="backward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             #condition*assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+
+# subtract main effect..don't really know what this means
+summary(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             condition*diff_interventionTestOutcomeRG+
+             condition*assessmentStrategyGenerateSuccessRate -
+             diff_interventionTestOutcomeRG -
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users))
+
+```
+
+```{r model build consistency of behavior scaled}
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             scale(interventionTestScore, center=T, scale=F)+
+             scale(diff_interventionPredictRG, center=T, scale=F)+
+             scale(diff_interventionTestOutcomeRG, center=T, scale=F)+
+             scale(diff_interventionRestudyScoreToPrediction, center=T, scale=F)+
+             scale(diff_interventionGenerateScoreToPrediction, center=T, scale=F)+
+             #scale(assessmentStrategyRestudySuccessRate, center=T, scale=F)+
+             scale(assessmentStrategyGenerateSuccessRate, center=T, scale=F)+
+             scale(age, center=T, scale=F), 
+             filter(df_v6n288_users, !is.na(age))), direction="both", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             scale(interventionTestScore, center=T, scale=F)+
+             scale(diff_interventionPredictRG, center=T, scale=F)+
+             condition*scale(diff_interventionTestOutcomeRG, center=T, scale=F)+
+             condition*scale(diff_interventionRestudyScoreToPrediction, center=T, scale=F)+
+             condition*scale(diff_interventionGenerateScoreToPrediction, center=T, scale=F)+
+             #condition*scale(assessmentStrategyRestudySuccessRate, center=T, scale=F)+
+             condition*scale(assessmentStrategyGenerateSuccessRate, center=T, scale=F)+
+             scale(age, center=T, scale=F), 
+             filter(df_v6n288_users, !is.na(age))), direction="both", trace=F))
+
+```
+
+
+```{r model build consistency of belief}
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="forward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             #assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="backward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             #assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+
+# with interactions
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             condition*assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="forward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             #condition*assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             age, 
+             df_v6n288_users), direction="backward", trace=F))
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             #condition*assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             age, 
+             filter(df_v6n288_users, !is.na(age))), direction="both", trace=F))
+
+```
+
+```{r belief scaled}
+
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             scale(interventionTestScore, center=T, scale=F)+
+             scale(diff_interventionPredictRG, center=T, scale=F)+
+             condition*scale(diff_interventionTestOutcomeRG, center=T, scale=F)+
+             condition*scale(diff_interventionRestudyScoreToPrediction, center=T, scale=F)+
+             condition*scale(diff_interventionGenerateScoreToPrediction, center=T, scale=F)+
+             #condition*assessmentStrategyRestudySuccessRate+
+             condition*scale(assessmentStrategyGenerateSuccessRate, center=T, scale=F)+
+             scale(age, center=T, scale=F), 
+             filter(df_v6n288_users, !is.na(age))), direction="both", trace=F))
+
+```
+
+
+
+```{r model build learning outcomes}
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             diff_assessmentBeliefRG_num+
+             assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             assessmentStrategyChoiceGenerateCount+
+             age, 
+             df_v6n288_users), direction="forward", trace=F))
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             diff_assessmentBeliefRG_num+
+             #assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             assessmentStrategyChoiceGenerateCount+
+             age, 
+             df_v6n288_users), direction="backward", trace=F))
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             diff_assessmentBeliefRG_num+
+             #assessmentStrategyRestudySuccessRate+
+             assessmentStrategyGenerateSuccessRate+
+             assessmentStrategyChoiceGenerateCount+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+
+# with interactions
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             condition*diff_assessmentBeliefRG_num+
+             #assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             condition*assessmentStrategyChoiceGenerateCount+
+             age, 
+             df_v6n288_users), direction="forward", trace=F))
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             condition*diff_assessmentBeliefRG_num+
+             #assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             condition*assessmentStrategyChoiceGenerateCount+
+             age, 
+             df_v6n288_users), direction="backward", trace=F))
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             condition*diff_assessmentBeliefRG_num+
+             #assessmentStrategyRestudySuccessRate+
+             condition*assessmentStrategyGenerateSuccessRate+
+             condition*assessmentStrategyChoiceGenerateCount+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+
+```
+
+```{r learning scaled}
+
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             scale(interventionTestScore, center=T, scale=F)+
+             scale(diff_interventionPredictRG, center=T, scale=F)+
+             condition*scale(diff_interventionTestOutcomeRG, center=T, scale=F)+
+             condition*scale(diff_interventionRestudyScoreToPrediction, center=T, scale=F)+
+             condition*scale(diff_interventionGenerateScoreToPrediction, center=T, scale=F)+
+             condition*scale(diff_assessmentBeliefRG_num, center=T, scale=F)+
+             #assessmentStrategyRestudySuccessRate+
+             condition*scale(assessmentStrategyGenerateSuccessRate, center=T, scale=F)+
+             condition*scale(assessmentStrategyChoiceGenerateCount, center=T, scale=F)+
+             scale(age, center=T, scale=F), 
+             filter(df_v6n288_users, !is.na(age))), direction="both", trace=F))
+
+```
+
+
+```{r simple condition only}
+
+# predict choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition, df_v6n288_users))
+
+df_v6n288_users %>% ggplot(aes(y=assessmentStrategyChoiceGenerateCount, x=condition, fill=condition)) + geom_boxplot()
+
+
+# predict beliefs
+summary(lm(diff_assessmentBeliefRG_num ~ 1 + condition, df_v6n288_users))
+
+df_v6n288_users %>% ggplot(aes(y=diff_assessmentBeliefRG_num, x=condition, fill=condition)) + geom_boxplot()
+
+# predict learning outcomes
+summary(lm(assessmentTestScore ~ 1 + condition, df_v6n288_users))
+
+
+df_v6n288_users %>% ggplot(aes(y=interventionTestScore, x=condition, fill=condition)) + geom_boxplot()
+df_v6n288_users %>% ggplot(aes(y=assessmentTestScore, x=condition, fill=condition)) + geom_boxplot()
+
+```
+
+```{r condition only + covariates}
+
+# predict choices
+summary(lm(assessmentStrategyChoiceGenerateCount ~ 1 + condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + assessmentStrategyGenerateSuccessCount, df_v6n288_users))
+
+
+# predict beliefs
+summary(lm(diff_assessmentBeliefRG_num ~ 1 + condition + assessmentStrategyChoiceGenerateCount + diff_interventionPredictRG + diff_interventionTestOutcomeRG + assessmentStrategyGenerateSuccessCount, df_v6n288_users))
+
+
+# predict learning outcomes
+summary(lm(assessmentTestScore ~ 1 + condition + diff_assessmentBeliefRG_num + assessmentStrategyChoiceGenerateCount + diff_interventionPredictRG + diff_interventionTestOutcomeRG + assessmentStrategyGenerateSuccessCount, df_v6n288_users))
+
+
+```
+
+
+# plot models
+```{r}
+
+
+
+# behavior consistency as a function of condition & generateSuccessRate
+means <- summarySE(df_v6n288_users, measurevar="changeRelativeToOutcomeBehavior_num", groupvars=c("condition", "assessmentStrategyGenerateSuccessRate"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(x=assessmentStrategyGenerateSuccessRate, y=changeRelativeToOutcomeBehavior_num)) +
+    geom_point(position=position_dodge(.9), stat="identity") + geom_line() + geom_smooth() + 
+    #geom_errorbar(aes(ymin=changeRelativeToOutcomeBehavior_num-ci, ymax=changeRelativeToOutcomeBehavior_num+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle =0)) + theme(legend.position = "none") +
+    facet_wrap(vars(condition))
+
+
+# belief consistency as a function of condition & generateSuccessRate
+means <- summarySE(df_v6n288_users, measurevar="changeRelativeToOutcome_num", groupvars=c("condition", "assessmentStrategyGenerateSuccessRate"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(x=assessmentStrategyGenerateSuccessRate, y=changeRelativeToOutcome_num)) +
+    geom_point(position=position_dodge(.9), stat="identity") + geom_line() + geom_smooth() + 
+    #geom_errorbar(aes(ymin=changeRelativeToOutcome_num-ci, ymax=changeRelativeToOutcome_num+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle =0)) + theme(legend.position = "none") +
+    facet_wrap(vars(condition))
+
+# behavior consistency as a function of condition & generateSuccessRate
+means <- summarySE(df_v6n288_users, measurevar="changeRelativeToOutcomeBehavior_num", groupvars=c("condition", "highGenerateSuccessRate"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(x=highGenerateSuccessRate, y=changeRelativeToOutcomeBehavior_num)) +
+    geom_bar(position=position_dodge(.9), stat="identity")+
+    geom_errorbar(aes(ymin=changeRelativeToOutcomeBehavior_num-ci, ymax=changeRelativeToOutcomeBehavior_num+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle =0)) + theme(legend.position = "none") +
+    facet_wrap(vars(condition))
+
+
+# belief consistency as a function of condition & generateSuccessRate
+means <- summarySE(df_v6n288_users, measurevar="changeRelativeToOutcome_num", groupvars=c("condition", "highGenerateSuccessRate"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(x=highGenerateSuccessRate, y=changeRelativeToOutcome_num)) +
+    geom_bar(position=position_dodge(.9), stat="identity")+
+    geom_errorbar(aes(ymin=changeRelativeToOutcome_num-ci, ymax=changeRelativeToOutcome_num+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle =0)) + theme(legend.position = "none") +
+    facet_wrap(vars(condition))
+
+
+```
+# what to do about missing assessmentStrategyGenerateSuccessRate?
+```{r}
+
+
+nrow(filter(df_v6n288_users, is.na(assessmentStrategyGenerateSuccessRate)))
+# missing data from a fair few, n=66
+
+apa.cor.table(df_v6n288_users[c(
+  "assessmentStrategyGenerateSuccessRate",
+  "interventionStrategyGenerateScoreRound1",
+  "interventionTestGenerateScore",
+  "interventionTestScore", 
+  "assessmentStrategyGenerateScore",
+  "assessmentTestScore"
+  )])
+# a moderate positive relationship between intervention strat score and assessment strat score/successRate
+
+m0 <- lm(assessmentStrategyGenerateSuccessRate ~ interventionStrategyGenerateScoreRound1, df_v6n288_users); summary(m0)
+m1 <- lm(assessmentStrategyGenerateSuccessRate ~ condition + interventionStrategyGenerateScoreRound1, df_v6n288_users); summary(m1)
+m2 <- lm(assessmentStrategyGenerateSuccessRate ~ condition *  interventionStrategyGenerateScoreRound1, df_v6n288_users); summary(m2)
+anova(m0,m1,m2)
+
+summary(stepAIC(lm(assessmentStrategyGenerateSuccessRate ~ condition+
+             interventionStrategyRestudyScoreRound1+
+             interventionStrategyGenerateScoreRound1+
+             interventionTestRestudyScore+
+             interventionTestGenerateScore+
+             interventionTestScore+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+# included restudy vars in this model just for completeness, but it doesn't make a ton of theoretical sense
+
+summary(stepAIC(lm(assessmentStrategyGenerateSuccessRate ~ condition+
+             interventionStrategyGenerateScoreRound1+
+             interventionTestGenerateScore+
+             interventionTestScore+
+             age, 
+             df_v6n288_users), direction="both", trace=F))
+# this last model is most interpretable, and has the highest explanatory power
+# would probably go with this one if imputing genSuccessRate
+
+summary(stepAIC(lm(highGenerateSuccessRate_num ~ condition+
+             interventionStrategyGenerateScoreRound1+
+             interventionTestGenerateScore+
+             interventionTestScore+
+             age, 
+             filter(df_v6n288_users, !is.na(age))), direction="both", trace=F))
+# it's definitely not better to try to impute high/low generateSuccessRate. Not sure why...it seems like a coarser measure. But I guess it's because there's not a linear relationship.
+
+
+apa.cor.table(df_v6n288_users[c(
+  "highGenerateSuccessRate_num",
+  "assessmentStrategyGenerateSuccessRate",
+  "assessmentStrategyRestudySuccessRate",
+  "interventionStrategyRestudyScoreRound1",
+  "interventionStrategyGenerateScoreRound1",
+  "interventionTestScore", 
+  "age"
+  )])
+
+m0 <- lm(assessmentStrategyGenerateSuccessRate ~ interventionTestScore, filter(df_v6n288_users, !is.na(age))); summary(m0)
+m1 <- lm(assessmentStrategyGenerateSuccessRate ~ interventionStrategyGenerateScoreRound1 + age, filter(df_v6n288_users, !is.na(age))); summary(m1)
+m2 <- lm(assessmentStrategyGenerateSuccessRate ~ interventionStrategyGenerateScoreRound1 + interventionTestScore + age, filter(df_v6n288_users, !is.na(age))); summary(m2)
+anova(m0,m1,m2)
+
+#df_v6n288_users %>% ggplot(aes(assessmentStrategyGenerateScore, assessmentStrategyGenerateSuccessRate, color=as.factor(interventionStrategyGenerateScoreRound1))) + geom_point() + geom_smooth(method=lm, se = F)
+#df_v6n288_users %>% ggplot(aes(interventionStrategyGenerateScoreRound1, assessmentStrategyGenerateSuccessRate, color=as.factor(assessmentStrategyGenerateScore))) + geom_point() + geom_smooth(method=lm, se = F)
+
+# I don't know how to interpret these plots. I think maybe genStratSuccess is so correlated with assessGenScore that when you control for assessGenScore, there's no relationship between interventionGenStratScore and genSuccess.
+```
+

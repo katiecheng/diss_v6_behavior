@@ -66,6 +66,52 @@ addmargins(table(prediction=df_v6n288_users$condition, prediction=df_v6n288_user
 
 ```
 
+```{r distribution of raw predictions}
+
+# raw count as table
+addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$interventionPrediction))
+
+# raw count as histogram
+df_v6n288_users %>% ggplot(aes(diff_interventionPredictRG, fill=condition)) + geom_histogram(position=position_dodge(), binwidth = 1)
+
+# proportion of group as histogram
+df_v6n288_users %>% ggplot(aes(diff_interventionPredictRG, fill=condition)) + 
+  geom_histogram(
+    aes(y=c(..count..[..group..==1]/sum(..count..[..group..==1]),
+            ..count..[..group..==2]/sum(..count..[..group..==2]),
+            ..count..[..group..==3]/sum(..count..[..group..==3]))),
+    position=position_dodge(), binwidth = 1) + 
+  ylab("Proportion of group")
+
+# possibly...
+# expt2 believes no-diff most
+# control believes G most
+
+```
+
+```{r distribution of raw outcomes}
+
+# raw count as table
+addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$interventionOutcome))
+
+# raw count as histogram
+df_v6n288_users %>% ggplot(aes(diff_interventionTestOutcomeRG, fill=condition)) + geom_histogram(position=position_dodge(), binwidth = 1)
+
+# proportion of group as histogram
+df_v6n288_users %>% ggplot(aes(diff_interventionTestOutcomeRG, fill=condition)) + 
+  geom_histogram(
+    aes(y=c(..count..[..group..==1]/sum(..count..[..group..==1]),
+            ..count..[..group..==2]/sum(..count..[..group..==2]),
+            ..count..[..group..==3]/sum(..count..[..group..==3]))),
+    position=position_dodge(), binwidth = 1) + 
+  ylab("Proportion of group")
+
+# possibly...
+# expt2 believes no-diff most
+# control believes G most
+
+```
+
 ```{r generation effect group}
 
 # group level
@@ -102,7 +148,7 @@ summary(lmer(mean ~ measures + (1|prolificId), melt)) # learned more under gener
 # Intervention results
 
 ## Behavioral Choices
-```{r distribution of raw # generate choices}
+```{r Viz: What is the distribution of raw # generate choices by condition?}
 
 # raw count as table
 addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$assessmentStrategyChoiceGenerateCount))
@@ -135,6 +181,13 @@ summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, df_v6n288_users)) 
 # expt2 chooses G 10.5 times (more times than not)
 
 
+# controlling for predictions and outcomes? Yes
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition + interventionPrediction + interventionOutcome, df_v6n288_users)) # 1.719e-05
+
+# controlling for predictions and outcomes? Yes
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users)) # 1.193e-05
+
+
 # broken down by REG outcomes # generate choices
 summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, 
            filter(df_v6n288_users, interventionOutcome=="generate"))) # 0.03516; expt2 choose more generate
@@ -145,8 +198,14 @@ summary(lm(assessmentStrategyChoiceGenerateCount ~ condition,
 # expt2 more G choices driven by those who got G feedback
 # yay!
 
+df_v6n288_users %>% ggplot(aes(y=assessmentStrategyChoiceGenerateCount, x=condition, fill=condition)) + geom_boxplot()
+
+df_v6n288_users %>% ggplot(aes(y=assessmentStrategyChoiceGenerateCount, x=condition, fill=condition)) + geom_boxplot() + facet_wrap(vars(interventionPrediction, interventionOutcome), labeller = "label_both")
+
+
 ```
-## Success rate as a metric
+
+## Success rate as a metric (DV)
 ```{r success rates at R and G across conditions}
 
 summary(df_v6n288_users[c("assessmentStrategyRestudySuccessRate","assessmentStrategyGenerateSuccessRate")])
@@ -189,6 +248,33 @@ summary(lm(assessmentStrategyRestudySuccessRate ~ condition + interventionStrate
 
 
 ```
+
+```{r probability of stay after R/G succ/fail}
+
+summary(lm(probStay_after_G_1 ~ condition, df_v6n288_users)) # 0.5751
+summary(lm(probStay_after_G_0 ~ condition, df_v6n288_users)) # 0.1084 marginal; expt2 more likely to stay after G0
+summary(lm(probStay_after_R_1 ~ condition, df_v6n288_users)) # 0.0646 marginal; expt2 less likely to stay after R1
+summary(lm(probStay_after_R_0 ~ condition, df_v6n288_users)) # 0.3628
+
+# driven by whom?
+summary(lm(probStay_after_G_0 ~ condition, filter(df_v6n288_users, interventionOutcome=="restudy"))) # 0.4368
+summary(lm(probStay_after_G_0 ~ condition, filter(df_v6n288_users, interventionOutcome=="equal"))) # 0.1057 marginal; expt2 more likely to stay after G0
+summary(lm(probStay_after_G_0 ~ condition, filter(df_v6n288_users, interventionOutcome=="generate"))) # 0.304
+
+summary(lm(probStay_after_R_1 ~ condition, filter(df_v6n288_users, interventionOutcome=="restudy"))) # 0.632
+summary(lm(probStay_after_R_1 ~ condition, filter(df_v6n288_users, interventionOutcome=="equal"))) # 0.2828
+summary(lm(probStay_after_R_1 ~ condition, filter(df_v6n288_users, interventionOutcome=="generate"))) # 0.1505 marginal; expt2 less likely to stay after R1
+
+
+
+df_v6n288_users %>% ggplot(aes(y=probStay_after_G_0, x=condition, fill=condition)) + geom_boxplot()
+
+df_v6n288_users %>% ggplot(aes(y=probStay_after_G_0, x=condition, fill=condition)) + geom_boxplot() + facet_wrap(vars(interventionPrediction, interventionOutcome), labeller = "label_both")
+
+df_v6n288_users %>% ggplot(aes(y=probStay_after_R_1, x=condition, fill=condition)) + geom_boxplot()
+
+```
+
 ## Test scores 
 ```{r assessment test score by condition}
 summary(df_v6n288_users$assessmentTestScore)
@@ -199,22 +285,24 @@ summary(lm(assessmentTestScore ~ condition, df_v6n288_users)) # oh dear. expt 2 
 # expt1 scored 9.4 of 20
 # expt2 scored 7.4 of 20; sig worse, though this goes away after controlling for interventionTestScore
 
-summary(lm(assessmentTestScore ~ condition + interventionTestScore, df_v6n288_users)) # oh dear. expt 2 has worse scores at the end, even controlling for intervention test score
+summary(lm(assessmentTestScore ~ condition + interventionTestScore, df_v6n288_users)) # oh dear. expt 2 has (insig) worse scores at the end, even controlling for intervention test score
 
 # control did best...
+
+
+summary(lm(assessmentTestScore ~ condition + interventionTestScore + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users)) 
 
 ```
 
 ## Final beliefs
 
-## Behavioral Choices
 ```{r distribution of raw final beliefs}
 
 # raw count as table
 addmargins(table(condition=df_v6n288_users$condition, outcome=df_v6n288_users$assessmentBelief))
 
 # raw count as histogram
-df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) + geom_histogram(position=position_dodge(), binwidth = 1)
+df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) + geom_histogram(position=position_dodge(), binwidth=.2)
 
 # proportion of group as histogram
 df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) + 
@@ -222,7 +310,7 @@ df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) +
     aes(y=c(..count..[..group..==1]/sum(..count..[..group..==1]),
             ..count..[..group..==2]/sum(..count..[..group..==2]),
             ..count..[..group..==3]/sum(..count..[..group..==3]))),
-    position=position_dodge(), binwidth = 1) + 
+    position=position_dodge(), binwidth=.2) + 
   ylab("Proportion of group")
 
 # possibly...
@@ -230,6 +318,91 @@ df_v6n288_users %>% ggplot(aes(diff_assessmentBeliefRG_num, fill=condition)) +
 # control believes G most
 
 ```
+
+```{r accounting for pre does condition predict diff in post beliefs RG?}
+
+
+# Does condition predict post beliefs? No
+m1 <- summary(lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users)); m1
+
+# Does condition predict if we control for pre beliefs? No condition is irrelevant, though pre matters
+m1 <- summary(lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG, df_v6n288_users)); m1
+
+# Does condition predict if we control for pre, and account for the strength/type of the feedback? No, condition doesn't interact with outcome to predict final belief
+m1 <- summary(lm(diff_assessmentBeliefRG_num ~ condition * diff_interventionTestOutcomeRG + diff_interventionPredictRG, df_v6n288_users)); m1
+
+# Does outcome predict final belief? Yes...outcome predicts final belief, and it doesn't matter what condition you're in...
+m1 <- summary(lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users)); m1
+
+# So the feedback doesn't seem to matter. People know how well they've done, even without the feedback screen--their final beliefs align with their outcomes. Condition/feedback doesn't make a difference. TODO does OE "anything surprise you?" corroborate this idea? TP maybe it's the experimental contrast itself that is enough for people to assess effectiveness?
+
+```
+
+```{r accounting for pre does condition predict post beliefs REG?}
+
+# Does condition predict post beliefs? No
+chisq.test(table(df_v6n288_users$condition, df_v6n288_users$assessmentBelief)) # 0.2043
+df_v6n288_users %>% ggplot(aes(assessmentBelief, fill=condition)) + geom_bar(position=position_dodge()) 
+
+# Does condition predict differently for different pre beliefs? No, no matter your pre belief, condition doesn't matter...but Pre matters
+chisq.test(table(filter(df_v6n288_users, interventionPrediction=='restudy')$condition,
+                 filter(df_v6n288_users, interventionPrediction=='restudy')$assessmentBelief)) #0.2979
+
+chisq.test(table(filter(df_v6n288_users, interventionPrediction=='equal')$condition,
+                 filter(df_v6n288_users, interventionPrediction=='equal')$assessmentBelief)) #0.3824
+
+chisq.test(table(filter(df_v6n288_users, interventionPrediction=='generate')$condition,
+                 filter(df_v6n288_users, interventionPrediction=='generate')$assessmentBelief)) #0.1726
+
+chisq.test(table(df_v6n288_users$interventionPrediction, df_v6n288_users$assessmentBelief)) # 2.412e-05
+
+df_v6n288_users %>% ggplot(aes(assessmentBelief, fill=condition)) + geom_bar(position=position_dodge()) + facet_wrap(vars(interventionPrediction), labeller = "label_both")
+
+# Does condition predict differently for different types of outcomes/feedback? No, no matter your outcome, condition doesn't matter...but outcome matters
+
+chisq.test(table(filter(df_v6n288_users, interventionOutcome=='restudy')$condition,
+                 filter(df_v6n288_users, interventionOutcome=='restudy')$assessmentBelief)) #0.344
+
+chisq.test(table(filter(df_v6n288_users, interventionOutcome=='equal')$condition,
+                 filter(df_v6n288_users, interventionOutcome=='equal')$assessmentBelief)) #0.9349
+
+chisq.test(table(filter(df_v6n288_users, interventionOutcome=='generate')$condition,
+                 filter(df_v6n288_users, interventionOutcome=='generate')$assessmentBelief)) #0.3475
+
+
+df_v6n288_users %>% ggplot(aes(assessmentBelief, fill=condition)) + geom_bar(position=position_dodge()) + facet_wrap(vars(interventionOutcome), labeller = "label_both")
+
+# Does outcome predict final belief? Yes...outcome predicts final belief, and it doesn't matter what condition you're in...
+chisq.test(table(df_v6n288_users$interventionOutcome, df_v6n288_users$assessmentBelief)) # 0.005565
+
+# How about both? specifically for RG? Nope, even then condition didn't matter (sample too small)
+
+addmargins(table(filter(df_v6n288_users, interventionPrediction=='restudy' &
+                          interventionOutcome=='generate')$condition, 
+      filter(df_v6n288_users, interventionPrediction=='restudy' &
+                          interventionOutcome=='generate')$assessmentBelief)) 
+# n=78 in predict R, got G
+# 21-33 in each condition, split across 3 final beliefs
+
+df_v6n288_users %>% ggplot(aes(assessmentBelief, fill=condition)) + geom_bar(position=position_dodge()) + facet_wrap(vars(interventionPrediction, interventionOutcome), labeller = "label_both")
+
+chisq.test(table(filter(df_v6n288_users, interventionPrediction=='restudy' &
+                          interventionOutcome=='generate')$condition,
+                 filter(df_v6n288_users, interventionPrediction=='restudy' &
+                          interventionOutcome=='generate')$assessmentBelief)) #0.5016
+
+
+
+# So the feedback doesn't seem to matter. People know how well they've done, even without the feedback screen--their final beliefs align with their outcomes. Condition/feedback doesn't make a difference. TODO does OE "anything surprise you?" corroborate this idea? TP maybe it's the experimental contrast itself that is enough for people to assess effectiveness?
+
+
+df_v6n288_users %>% ggplot(aes(assessmentBelief)) + geom_bar(position=position_dodge()) + facet_wrap(vars(interventionPrediction, interventionOutcome), labeller = "label_both")
+
+
+df_v6n288_users %>% ggplot(aes(x=condition, y=diff_assessmentBeliefRG_num, fill=condition)) + geom_boxplot() + facet_wrap(vars(interventionPrediction, interventionOutcome), labeller = "label_both")
+
+```
+
 
 
 ```{r final belief by condition}
@@ -359,12 +532,432 @@ summary(filter(df_v6n288_users, condition=="expt2" & effortGenerate_withHint_num
 
 ```
 
-```{r does G-hint affect expt2's opinions toward G vs. expt1's opinons?}
+```{r does G-hint affect expt2's opinions toward G vs. expt1's opinions?}
 
 summary(lm(effectivenessGenerate_num ~ condition, df_v6n288_users)) # 0.1062; expt2 < control
 summary(lm(effortGenerate_num ~ condition, df_v6n288_users)) # ns
 
 # existence of G-hint may drive down ratings of effectiveness of G
+
+```
+# Alt mechanisms
+
+```{r}
+
+
+apa.cor.table(df_v6n288_users[c(
+  "effort_num", 
+  "interventionTestScore",
+  "assessmentStrategyChoiceGenerateCount",
+  "probStay_after_G_0",
+  "probStay_after_R_1",
+  "assessmentTestScore")])
+
+```
+
+# backsorting thing, relating behaviors/beliefs, accounting for predictors
+
+```{r}
+df_v6n288_users$condition
+df_v6n288_users$assessmentBelief
+df_v6n288_users$assessmentStrategyGenerateSuccessRate
+
+summary(lm(assessmentStrategyGenerateSuccessRate ~ condition * interventionPrediction * interventionOutcome * assessmentBelief, df_v6n288_users))
+
+
+# preserves order
+means <- summarySE(df_v6n288_users, measurevar="assessmentStrategyGenerateSuccessRate", groupvars=c("condition"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(condition, assessmentStrategyGenerateSuccessRate)) + 
+    geom_bar(position=position_dodge(.9), stat="identity") + 
+    geom_errorbar(aes(ymin=assessmentStrategyGenerateSuccessRate-ci, ymax=assessmentStrategyGenerateSuccessRate+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle = 90)) 
+
+means <- summarySE(df_v6n288_users, measurevar="assessmentStrategyGenerateSuccessRate", groupvars=c("condition", "interventionOutcome"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(condition, assessmentStrategyGenerateSuccessRate, color=interventionOutcome, fill=interventionOutcome)) + 
+    geom_bar(position=position_dodge(.9), stat="identity") + 
+    geom_errorbar(aes(ymin=assessmentStrategyGenerateSuccessRate-ci, ymax=assessmentStrategyGenerateSuccessRate+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle = 90)) 
+
+means <- summarySE(df_v6n288_users, measurevar="assessmentStrategyGenerateSuccessRate", groupvars=c("condition", "interventionOutcome", "assessmentBelief"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(condition, assessmentStrategyGenerateSuccessRate, color=interventionOutcome, fill=interventionOutcome)) + 
+    geom_bar(position=position_dodge(.9), stat="identity") + 
+    geom_errorbar(aes(ymin=assessmentStrategyGenerateSuccessRate-ci, ymax=assessmentStrategyGenerateSuccessRate+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(assessmentBelief), labeller = "label_both")
+
+means <- summarySE(df_v6n288_users, measurevar="assessmentStrategyGenerateSuccessRate", groupvars=c("condition", "interventionPrediction", "interventionOutcome", "assessmentBelief"), na.rm=TRUE, conf.interval=0.95); means
+
+means %>% ggplot(aes(condition, assessmentStrategyGenerateSuccessRate, color=interventionOutcome, fill=interventionOutcome)) + 
+    geom_bar(position=position_dodge(.9), stat="identity") + 
+    geom_errorbar(aes(ymin=assessmentStrategyGenerateSuccessRate-ci, ymax=assessmentStrategyGenerateSuccessRate+ci), width=.2, position=position_dodge(.9)) + 
+    theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(assessmentBelief, interventionPrediction), ncol=9)
+
+#write.csv(means, "assessmentStrategyGenerateSuccessRate.csv")
+
+means <- summarySE(df_v6n288_users, measurevar="assessmentStrategyChoiceGenerateCount", groupvars=c("condition", "interventionPrediction", "interventionOutcome", "assessmentBelief"), na.rm=TRUE, conf.interval=0.95); means
+
+#write.csv(means, "assessmentStrategyChoiceGenerateCount.csv")
+
+
+```
+# Success rate as an IV, predicting final belief
+```{r success rate as IV predictor}
+
+
+apa.cor.table(df_v6n288_users[c("assessmentStrategyGenerateSuccessRate", 
+                                 "assessmentStrategyRestudySuccessRate",
+                                 "assessmentStrategyChoiceGenerateCount",
+                                 "diff_assessmentBeliefRG_num",
+                                "effectivenessGenerate_num",
+                                "effectivenessRestudy_num",
+                                 "assessmentTestScore")])
+
+
+apa.cor.table(df_v6n288_users[c("assessmentStrategyGenerateSuccessRate", 
+                                 "diff_interventionPredictRG",
+                                 "diff_interventionTestOutcomeRG",
+                                "assessmentTestGenerateScore")])
+
+
+```
+# correlations among predictors in linear model
+```{r predictors of final beliefs}
+
+apa.cor.table(df_v6n288_users[c("diff_assessmentBeliefRG_num",
+                                "diff_interventionPredictRG",
+                                "diff_interventionTestOutcomeRG",
+                                "assessmentStrategyGenerateSuccessRate", 
+                                "effortGenerate_num", 
+                                "effortGenerate_withHint_num"
+                                )])
+
+```
+
+```{r how final beliefs relate to behav and learning outcomes}
+
+apa.cor.table(df_v6n288_users[c("diff_assessmentBeliefRG_num",
+                                "assessmentStrategyChoiceGenerateCount",
+                                "diff_assessmentBehaviorRG",
+                                "assessmentTestGenerateScore")])
+```
+
+
+# full linear model with condition, outcome, prediction
+```{r lm with condition outcome prediction}
+m1 <-lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users); summary(m1)
+m2 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG, df_v6n288_users); summary(m2)
+#m2 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m2)
+m3 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3)
+
+anova(m1, m2, m3)
+
+# cannot run with m4 successrate, because different sample size. See below for filtered dataset that enables this comparison
+
+```
+
+```{r lm with condition outcome prediction experience}
+
+m1 <-lm(diff_assessmentBeliefRG_num ~ condition, filter(df_v6n288_users, assessmentStrategyChoiceGenerateCount>0)); summary(m1)
+m2 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG, filter(df_v6n288_users, assessmentStrategyChoiceGenerateCount>0)); summary(m2)
+#m2 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionTestOutcomeRG, filter(df_v6n288_users, assessmentStrategyChoiceGenerateCount>0)); summary(m2)
+m3 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, filter(df_v6n288_users, assessmentStrategyChoiceGenerateCount>0)); summary(m3)
+m4 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + assessmentStrategyGenerateSuccessRate, filter(df_v6n288_users, assessmentStrategyChoiceGenerateCount>0)); summary(m4)
+
+anova(m1, m2, m3, m4)
+```
+
+# what if I did this with only predict R, outcome G participants?
+
+```{r}
+
+apa.cor.table(filter(df_v6n288_users, interventionPrediction=="restudy"& interventionOutcome=="generate"& assessmentStrategyChoiceGenerateCount>0)[c("diff_assessmentBeliefRG_num",
+                                "diff_interventionPredictRG",
+                                "diff_interventionTestOutcomeRG",
+                                "assessmentStrategyGenerateSuccessRate", 
+                                "effortGenerate_num", 
+                                "effortGenerate_withHint_num"
+                                )])
+
+# what does it mean that the more they predicted R>G, the less effort they rated G_hint as being?
+
+```
+
+
+```{r lm with condition outcome prediction experience}
+
+
+
+m1 <-lm(diff_assessmentBeliefRG_num ~ condition, filter(df_v6n288_users, 
+                                                        interventionPrediction=="restudy"& 
+                                                          interventionOutcome=="generate"& 
+                                                          assessmentStrategyChoiceGenerateCount>0)); summary(m1)
+m2 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG, filter(df_v6n288_users, 
+                                                        interventionPrediction=="restudy"& 
+                                                          interventionOutcome=="generate"& 
+                                                          assessmentStrategyChoiceGenerateCount>0)); summary(m2)
+#m2 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionTestOutcomeRG, filter(df_v6n288_users, assessmentStrategyChoiceGenerateCount>0)); summary(m2)
+m3 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, filter(df_v6n288_users, 
+                                                        interventionPrediction=="restudy"& 
+                                                          interventionOutcome=="generate"& 
+                                                          assessmentStrategyChoiceGenerateCount>0)); summary(m3)
+m4 <-lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG + assessmentStrategyGenerateSuccessRate,
+        filter(df_v6n288_users, 
+                                                        interventionPrediction=="restudy"& 
+                                                          interventionOutcome=="generate"& 
+                                                          assessmentStrategyChoiceGenerateCount>0)); summary(m4)
+
+m5 <-lm(diff_assessmentBeliefRG_num ~ condition + assessmentStrategyGenerateSuccessRate,
+        filter(df_v6n288_users, 
+                                                        interventionPrediction=="restudy"& 
+                                                          interventionOutcome=="generate"& 
+                                                          assessmentStrategyChoiceGenerateCount>0)); summary(m5)
+
+m6 <-lm(diff_assessmentBeliefRG_num ~ condition * assessmentStrategyGenerateSuccessRate,
+        filter(df_v6n288_users, 
+                                                        interventionPrediction=="restudy"& 
+                                                          interventionOutcome=="generate"& 
+                                                          assessmentStrategyChoiceGenerateCount>0)); summary(m6)
+
+anova(m1, m2, m3, m4)
+anova(m1, m5, m6) # taking out strength of prediction/outcome
+
+# among those who believed restudy and got generate...
+# condition/feedback didn't predict strength of final beliefs (maybe only marginally for expt1)
+# nor did strength of 
+```
+
+# Side question: effort conflated with effectiveness?
+```{r effort conflated with effectiveness?}
+apa.cor.table(df_v6n288_users[c("effectivenessGenerate_num",
+                                "effortGenerate_num", 
+                                "effortGenerate_withHint_num"
+                                )])
+# it is not a statsig relationship that individuals who rate a strategy as more effortful also rate it as less effective
+# this is different than my FYP analysis, which was a within-individual correlation
+```
+```{r among expt2 who have two ratings on generate-like strategies}
+
+
+
+```
+
+# 2020-05-22 Meeting Dan, tables
+
+```{r count in each group}
+table(df_v6n288_users$condition)
+
+table(interventionOutcome=df_v6n288_users$interventionOutcome, assessmentBelief=df_v6n288_users$assessmentBelief, condition=df_v6n288_users$condition)
+
+table(
+      interventionOutcome=df_v6n288_users$interventionOutcome, 
+      assessmentBelief=df_v6n288_users$assessmentBelief, 
+      interventionPrediction=df_v6n288_users$interventionPrediction, 
+      condition=df_v6n288_users$condition)
+
+```
+
+
+```{r GenerateCount by condition prediction outcome final}
+
+with(df_v6n288_users, tapply(assessmentStrategyChoiceGenerateCount, list(
+  condition=condition), function(x){round(mean(x),1)}))
+
+with(df_v6n288_users, tapply(assessmentStrategyChoiceGenerateCount, list(
+  interventionOutcome=interventionOutcome, 
+  assessmentBelief=assessmentBelief, 
+  condition=condition), function(x){round(mean(x),1)}))
+
+with(df_v6n288_users, tapply(assessmentStrategyChoiceGenerateCount, list(
+  interventionOutcome=interventionOutcome, 
+  assessmentBelief=assessmentBelief,
+  interventionPrediction=interventionPrediction, 
+  condition=condition), function(x){round(mean(x),1)}))
+
+#melt <- tidyr::gather(df_v6n288_users, key="measures", value="mean", assessmentStrategyChoiceGenerateCount, assessmentTestGenerateScore, assessmentStrategyGenerateSuccessRate, factor_key = TRUE)
+#means <- summarySE(melt, measurevar="mean", groupvars=c("condition", "measures", "interventionPrediction", "interventionOutcome", "assessmentBelief"), na.rm=TRUE, conf.interval=0.95); means
+
+#write.csv(means, "2020-05-22_Meeting Dan_condition_fails_finalbelief.csv")
+
+```
+
+```{r # failures by condition prediction outcome final}
+
+with(df_v6n288_users, tapply(assessmentStrategyGenerateFailureCount, list(
+  condition=condition), function(x){round(mean(x, na.rm=T),1)}))
+
+with(df_v6n288_users, tapply(assessmentStrategyGenerateFailureCount, list(
+  interventionOutcome=interventionOutcome, 
+  assessmentBelief=assessmentBelief, 
+  condition=condition), function(x){round(mean(x, na.rm=T),1)}))
+
+with(df_v6n288_users, tapply(assessmentStrategyGenerateFailureCount, list(
+  interventionOutcome=interventionOutcome, 
+  assessmentBelief=assessmentBelief,
+  interventionPrediction=interventionPrediction, 
+  condition=condition), function(x){round(mean(x, na.rm=T),1)}))
+
+test <- filter(df_v6n288_users, 
+               condition=='control' &
+               interventionPrediction=='generate' & 
+                 interventionOutcome=='equal' & 
+                 assessmentBelief=='equal')$assessmentStrategyGenerateFailureCount; test
+round(mean(test, na.rm=T),1)
+
+test <- filter(df_v6n288_users, 
+               condition=='control' &
+               interventionPrediction=='restudy' & 
+                 interventionOutcome=='equal' & 
+                 assessmentBelief=='restudy')$assessmentStrategyGenerateFailureCount; test
+round(mean(test, na.rm=T),1)
+
+```
+
+```{r anovas, predict #g, then predict final belief}
+
+m1 <- lm(assessmentStrategyChoiceGenerateCount ~ condition + interventionPrediction + interventionOutcome, df_v6n288_users); summary(m1)
+# expt2 > expt1 > control
+# predictG > predictE > predictR
+# outcomeG > outcomeE > outcomeR
+# main effects all as expected!
+
+table(df_v6n288_users$interventionPrediction, df_v6n288_users$interventionOutcome, df_v6n288_users$condition)
+
+df_v6n288_users %>% ggplot(aes(y=assessmentStrategyChoiceGenerateCount, x=condition, fill=condition)) + geom_boxplot() + geom_jitter(width=.1, height=0, alpha=.5) + facet_wrap(vars(interventionPrediction, interventionOutcome), labeller = "label_both")
+# interaction when prediction is equal and outcome is equal; expt1 generates more, expt2 generates less
+# interaction when prediction is generate and outcome is equal; expt1 generates less
+# interaction when prediction is generate and outcome is restudy; expt2 generates less (yes, outcome and condition should interact)
+# interaction when prediction is equal and outcome is restudy; expt2 generates more?! not sure why
+
+m2 <- lm(assessmentStrategyChoiceGenerateCount ~ condition + interventionPrediction + condition*interventionOutcome, df_v6n288_users); summary(m2)
+anova(m1, m2)
+# model with the condition*outcome interaction is not better
+
+```
+
+
+
+```{r predicting generate count with diffRG}
+m1 <- lm(assessmentStrategyChoiceGenerateCount ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m1)
+
+df_v6n288_users %>% ggplot(aes(y=assessmentStrategyChoiceGenerateCount, x=condition, fill=condition)) + geom_boxplot() + geom_jitter(width=.1, height=0, alpha=.5) + facet_wrap(vars(diff_interventionPredictRG, diff_interventionTestOutcomeRG))
+# this is just overwhelming
+
+```
+
+# exploration: how do learning scores compare Round1 and round2? Do people check out?
+```{r}
+
+
+hist(df_v6n288_users$diffAssessTestInterventionTest)
+
+# looks pretty normal
+# many do about the same
+# some do better (heavier on this side)
+# some do worse (a few do much worse, which is not expected.)
+
+summary(df_v6n288_users$diffAssessTestInterventionTest)
+mean <- mean(df_v6n288_users$diffAssessTestInterventionTest); mean
+mean + 3*sd(df_v6n288_users$diffAssessTestInterventionTest) # 12.56683
+mean - 3*sd(df_v6n288_users$diffAssessTestInterventionTest) # -9.70352
+
+filter(df_v6n288_users, diffAssessTestInterventionTest < -9.70352)[c("interventionTestScore","assessmentTestScore")]
+nrow(df_v6n288_users)
+
+# looks like 3/278 people checked out. could exclude them. or, could try to understand why they checked out.
+```
+
+# exploration: does performance relative to expectations explain checking-out?
+```{r}
+
+df_v6n288_users$interventionPredictedScore <- df_v6n288_users$interventionPredictRestudy + df_v6n288_users$interventionPredictGenerate
+df_v6n288_users$interventionTestVsPrediction <- df_v6n288_users$interventionTestScore - df_v6n288_users$interventionPredictedScore
+
+hist(df_v6n288_users$interventionTestVsPrediction)
+table(cut(df_v6n288_users$interventionTestVsPrediction, breaks=c(-21,0,20))) 
+# a few more people did better than expected than worse
+
+table(cut(df_v6n288_users$interventionTestVsPrediction, breaks=c(-21,-1,0,20))) 
+
+df_v6n288_users %>% ggplot(aes(interventionTestVsPrediction, changeRelativeToOutcome_num)) + geom_jitter(width=.1, height=.1) + geom_smooth()
+cor.test(df_v6n288_users$interventionTestVsPrediction, df_v6n288_users$changeRelativeToOutcome_num)
+# n.s.
+# the more your test exceeded your prediction, the more consistent you were
+# the worse you did compared to expectations, the less consistent you were
+
+# on the one you were told was better
+# did you do better/worse than expected?
+
+```
+# difference from predictions in v6?
+```{r}
+
+# if I am some kind of person (age, gender, incoming ability)
+# if I do better than I expected overall...
+# if I do better than expected on R...
+# if I do better than expected on G...
+# if I predicted R <=> G...
+# if I got R <=> G...
+# THEN
+# I have consistent beliefs
+# I choose consistent behavior
+# I learn more
+
+library(MASS)
+
+# forward
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             interventionTestVsPrediction+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG, df_v6n288_users), direction="forward", trace=FALSE))
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             interventionTestVsPrediction+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG, df_v6n288_users), direction="forward", trace=FALSE))
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             interventionTestVsPrediction+
+             diff_interventionRestudyScoreToPrediction+
+             diff_interventionGenerateScoreToPrediction+
+             diff_interventionPredictRG+
+             diff_interventionTestOutcomeRG, df_v6n288_users), direction="forward", trace=FALSE))
+
+# backward
+summary(stepAIC(lm(changeRelativeToOutcome_num ~ condition+
+             interventionTestScore+
+             interventionTestVsPrediction+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG, df_v6n288_users), direction="backward", trace=FALSE))
+summary(stepAIC(lm(changeRelativeToOutcomeBehavior_num ~ condition+
+             interventionTestScore+
+             interventionTestVsPrediction+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG, df_v6n288_users), direction="backward", trace=FALSE))
+summary(stepAIC(lm(assessmentTestScore ~ condition+
+             interventionTestScore+
+             interventionTestVsPrediction+
+             condition*diff_interventionRestudyScoreToPrediction+
+             condition*diff_interventionGenerateScoreToPrediction+
+             diff_interventionPredictRG+
+             condition*diff_interventionTestOutcomeRG, df_v6n288_users), direction="backward", trace=FALSE))
+```
+# consistency behavior?
+```{r}
+
+df_v6n288_users$changeRelativeToOutcomeBehavior
 
 ```
 

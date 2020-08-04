@@ -27,6 +27,9 @@ df_v6n288$assessmentStrategy_num <- factor(ifelse(
   df_v6n288$assessmentStrategy=="restudy", 0,
   ifelse(df_v6n288$assessmentStrategy=="generate", 1, NA)))
 
+# calculate effort diff
+df_v6n288_users$diff_assessmentBeliefEffortRG_num <- df_v6n288_users$effortRestudy_num - df_v6n288_users$effortGenerate_num
+
 # which exceeded expectations more?
 df_v6n288_users$diff_interventionStrategyScoreExceedPrediction <- df_v6n288_users$diff_interventionRestudyScoreToPrediction - 
   df_v6n288_users$diff_interventionGenerateScoreToPrediction
@@ -77,8 +80,15 @@ df_v6n288_users$diff_assessmentBehaviorRG <- df_v6n288_users$assessmentStrategyC
 df_v6n288_users$assessmentStrategyRestudySuccessRate <- df_v6n288_users$assessmentStrategyRestudyScore / df_v6n288_users$assessmentStrategyChoiceRestudyCount
 df_v6n288_users$assessmentStrategyGenerateSuccessRate <- df_v6n288_users$assessmentStrategyGenerateScore / df_v6n288_users$assessmentStrategyChoiceGenerateCount
 
+df_v6n288_users$highGenerateSuccessRate <- df_v6n288_users$assessmentStrategyGenerateSuccessRate >= .5
+df_v6n288_users$highGenerateSuccessRate_num <- ifelse(df_v6n288_users$assessmentStrategyGenerateSuccessRate, 1, 0)
+
 # effort diffRG
 df_v6n288_users$diff_effortRG  <- df_v6n288_users$effortRestudy_num - df_v6n288_users$effortGenerate_num
+
+
+# diff test 2 to test 1
+df_v6n288_users$changeTestScore <- df_v6n288_users$assessmentTestScore - df_v6n288_users$interventionTestScore
 
 # drop unused factor levels
 df_v6n288 <- droplevels(df_v6n288)
@@ -87,3 +97,21 @@ df_v6n288_users <- droplevels(df_v6n288_users)
 # subset dfs
 df_v6n288_users_control <- filter(df_v6n288_users, condition=="control"); nrow(df_v6n288_users_control)
 df_v6n288_users_expt <- filter(df_v6n288_users, condition=="expt"); nrow(df_v6n288_users_expt)
+df_v6n288_users_predRoutG <- filter(df_v6n288_users, interventionPrediction=="restudy" & interventionOutcome=="generate"); nrow(df_v6n288_users_predRoutG)
+df_v6n288_users_filterNat <- filter(df_v6n288_users, Nationality=="United States"); nrow(df_v6n288_users_filterNat) # 265
+
+# create dataset for CPA in SPSS
+subsetVars <- df_v6n288_users[c("condition", 
+                                "interventionPrediction",
+                                "diff_interventionPredictRG",
+                                "interventionOutcome",
+                                "diff_interventionTestOutcomeRG",
+                                "assessmentStrategyChoiceGenerateCount",
+                                "assessmentStrategyGenerateSuccessCount",
+                                "assessmentStrategyGenerateFailureCount",
+                                "assessmentTestScore",
+                                "assessmentBelief",
+                                "diff_assessmentBeliefRG_num"
+)]
+
+write.csv(subsetVars,fs::path(dir_data, "2020-05-02_diss-v6-behavior_df-users-items_v6n288_afterWrangle_subsetVars.csv"), row.names = FALSE)

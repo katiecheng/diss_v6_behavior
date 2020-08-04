@@ -1,0 +1,187 @@
+---
+title: 'diss_v6_analysis_2020-07-03: Dan analysis'
+author: "Katie Cheng"
+date: "7/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lme4)
+library(lmerTest) # p-values on lmer
+source("summarySE.R")
+library(corrplot)
+library(plyr) # for ddply, calculating means for histograms
+library(apaTables) # for apa.cor.table
+#library(ggpubr) # for balloon plot
+library("ggalluvial") # for alluvial plot
+library(MASS) # stepAIC
+
+# differences in avgs btw groups
+# hierarchical: differences btw groups, controlling for participant
+```
+
+```{r import & wrangle}
+
+df_v5n48_users_predRoutG <- filter(df_v5n48_users, interventionPrediction=="restudy" & interventionOutcome=="generate"); nrow(df_v5n48_users_predRoutG)
+
+source("diss_v6_import.R")
+source("diss_v6_wrangle.R")
+
+# nrow(df_v6n144_users) # 138 of 144
+nrow(df_v6n288_users) # 278 of 288
+
+df_v6n288_users_sub <- df_v6n288_users[c(
+                  "condition",                                     # experimental condition (categ: control, expt1, expt2)
+                  "interventionPredictRestudy",                    # predicted score under restudy strategy (cont: 0-10)
+                  "interventionPredictGenerate",                   # predicted score under generate strategy (cont: 0-10)
+                  "diff_interventionPredictRG",                    # predicted difference restudy-generate (cont: -10 to 10)
+                  "interventionPrediction",                        # prediction for best strategy (categ: restudy, equal, generate)
+                  "interventionTestRestudyScore",                  # actual score under restudy strategy (cont: 0-10)
+                  "interventionTestGenerateScore",                 # actual score under generate strategy (cont: 0-10)
+                  "diff_interventionTestOutcomeRG",                # actual difference restudy-generate (cont: -10 to 10)
+                  "interventionOutcome",                           # actual best strategy (categ: restudy, equal, generate)
+                  "diff_interventionRestudyScoreToPrediction",     # difference between actual restudy score and predicted (cont: -10 to 10)
+                  "diff_interventionGenerateScoreToPrediction",    # difference between actual generate score and predicted (cont: -10 to 10)
+                  "assessmentStrategyChoiceGenerateCount",         # DV: number of generate choices (cont: 0-20)
+                  "assessmentStrategyGenerateSuccessCount",        # number of generate strategy successes (cont: 0-20)
+                  "assessmentStrategyGenerateFailureCount",        # number of generate strategy failures (cont: 0-20)
+                  "assessmentTestScore",                           # DV: final test score (cont: 0-20)
+                  "effectivenessRestudy",                          # final belief on the effectiveness of restudy strategy (cont: 0-1.69)
+                  "effectivenessGenerate",                         # final belief on the effectiveness of generate strategy (cont: 0-1.69)
+                  "diff_assessmentBeliefRG_num",                   # DV: final belief for difference restudy-generate (cont: -1.69 to 1.69)
+                  "assessmentBelief"                               # DV: final belief for best strategy (categ: restudy, equal, generate)
+                  )]
+
+#write.csv(subsetVars,fs::path(dir_data, "2020-05-02_diss-v6-behavior_df-users-items_v6n288_afterWrangle_subsetVars.csv"), row.names = FALSE)
+
+df_v6n288_users_predRoutG <- filter(df_v6n288_users, interventionPrediction=="restudy" & interventionOutcome=="generate"); nrow(df_v6n288_users_predRoutG)
+
+
+```
+
+
+# 2020-07-07 Dan Analysis: predict final belief with prediction and outcome as covariates
+```{r my explorations}
+
+# build up pred
+# pred + out
+# show that there is no interaction
+# behaviors
+# beliefs
+# how those contrib to learning outcomes
+
+#df_v6n288_users$diff_interventionTestOutcomeRG
+df_v6n288_users$condition
+
+# continuous predictors
+m1<- lm(diff_assessmentBeliefRG_num ~ diff_interventionPredictRG, df_v6n288_users); summary(m1)
+m2<- lm(diff_assessmentBeliefRG_num ~ diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m2)
+m3<- lm(diff_assessmentBeliefRG_num ~ diff_interventionPredictRG * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3)
+anova(m1,m2,m3) # no interaction
+
+m4<- lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users); summary(m4)
+
+# split into cat and cont
+m0<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction, df_v6n288_users); summary(m0)
+#m1<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction + abs(diff_interventionPredictRG), df_v6n288_users); summary(m1)
+#anova(m0,m1)
+m2<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction + interventionOutcome, df_v6n288_users); summary(m2)
+anova(m0,m2) # trend
+m2a<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction + interventionOutcome + abs(diff_interventionTestOutcomeRG), df_v6n288_users); summary(m2a)
+anova(m0,m2,m2a) # ns
+m3<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction + abs(diff_interventionTestOutcomeRG), df_v6n288_users); summary(m3)
+anova(m0,m3) # ns
+
+
+m2<- lm(diff_assessmentBeliefRG_num ~ diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m2)
+m3<- lm(diff_assessmentBeliefRG_num ~ diff_interventionPredictRG * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m3)
+anova(m1,m2,m3) # no interaction
+
+# categorical predictors
+m1<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction, df_v6n288_users); summary(m1)
+m2<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction + interventionOutcome, df_v6n288_users); summary(m2)
+m3<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction * interventionOutcome, df_v6n288_users); summary(m3)
+anova(m1,m2,m3) # no interaction
+
+# categorical predictors to num
+m1<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction_num, df_v6n288_users); summary(m1)
+m2<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction_num + interventionOutcome_num, df_v6n288_users); summary(m2)
+m3<- lm(diff_assessmentBeliefRG_num ~ interventionPrediction_num * interventionOutcome_num, df_v6n288_users); summary(m3)
+anova(m1,m2,m3) # no interaction
+
+
+m4<- lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users); summary(m4)
+m4<- lm(diff_assessmentBeliefRG_num ~ condition + diff_interventionPredictRG, df_v6n288_users); summary(m4)
+m4<- lm(diff_assessmentBeliefRG_num ~ condition * diff_interventionPredictRG, df_v6n288_users); summary(m4)
+
+# what does it mean that there's no difference by condition in diff_finalBelief? when i don't take into account pred/out, there's no difference in finalBelief
+# what does it mean that there is a difference by condition when I'm looking at consistency? it means if I take into account pred/out, there's a difference in final direction of change
+
+
+### testing other outcomes ###
+
+m4<- lm(diff_assessmentBeliefRG_num ~ condition, df_v6n288_users); summary(m4)
+m4<- lm(changeRelativeToOutcome_num ~ condition, df_v6n288_users); summary(m4)
+
+# cont
+m4<- lm(changeRelativeToOutcome_num ~ condition, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcome_num ~ diff_interventionPredictRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcome_num ~ diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcome_num ~ diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcome_num ~ diff_interventionPredictRG * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+
+# split into cat and cont 
+m0a<- lm(changeRelativeToOutcome_num ~ interventionPrediction, df_v6n288_users); summary(m0a) # sig; equal less consistent
+m0b<- lm(changeRelativeToOutcome_num ~ abs(diff_interventionPredictRG), df_v6n288_users); summary(m0b) # trend; bigger diff, more consistent
+m0c<- lm(changeRelativeToOutcome_num ~ interventionPrediction_num, df_v6n288_users); summary(m0c) # ns
+m1a<- lm(changeRelativeToOutcome_num ~ interventionPrediction + abs(diff_interventionPredictRG), df_v6n288_users); summary(m1a) # sig; driven by intervPrediction
+m1b<- lm(changeRelativeToOutcome_num ~ interventionPrediction_num + abs(diff_interventionPredictRG), df_v6n288_users); summary(m1b) # trend; driven by diffPred
+anova(m0a,m1a) # ns 
+anova(m0b,m1a) # sig; but m0b ns
+anova(m0c,m1b) # sig; but m0c ns
+# m0a most parsimonious; intervPred most predictive of consistency
+
+### behavior ###
+m4<- lm(assessmentStrategyChoiceGenerateCount ~ condition, df_v6n288_users); summary(m4)
+m4<- lm(assessmentStrategyChoiceGenerateCount ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4)
+m4<- lm(assessmentStrategyChoiceGenerateCount ~ condition + diff_interventionPredictRG * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4)
+
+# cont behavior
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition, df_v6n288_users); summary(m4) # trend
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ diff_interventionPredictRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition + diff_interventionPredictRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition * diff_interventionPredictRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition + diff_interventionPredictRG + diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+m4<- lm(changeRelativeToOutcomeBehavior_num ~ condition + diff_interventionPredictRG * diff_interventionTestOutcomeRG, df_v6n288_users); summary(m4) # ns
+
+# split into cat and cont behavior
+m0a<- lm(changeRelativeToOutcomeBehavior_num ~ interventionPrediction, df_v6n288_users); summary(m0a) # ns
+m0b<- lm(changeRelativeToOutcomeBehavior_num ~ abs(diff_interventionPredictRG), df_v6n288_users); summary(m0b) # ns
+m0c<- lm(changeRelativeToOutcomeBehavior_num ~ interventionPrediction_num, df_v6n288_users); summary(m0c) # ns
+m1a<- lm(changeRelativeToOutcomeBehavior_num ~ interventionPrediction + abs(diff_interventionPredictRG), df_v6n288_users); summary(m1a) # ns
+m1b<- lm(changeRelativeToOutcomeBehavior_num ~ interventionPrediction_num + abs(diff_interventionPredictRG), df_v6n288_users); summary(m1b) # ns
+anova(m0a,m1a) # ns
+anova(m0b,m1a) # trend
+anova(m0c,m1b) # ns
+
+m2a<- lm(changeRelativeToOutcomeBehavior_num ~ interventionOutcome, df_v6n288_users); summary(m2a) # 0.00833; sig
+m2b<- lm(changeRelativeToOutcomeBehavior_num ~ abs(diff_interventionTestOutcomeRG), df_v6n288_users); summary(m2b) # ns
+m2c<- lm(changeRelativeToOutcomeBehavior_num ~ interventionOutcome_num, df_v6n288_users); summary(m2c) # 0.08027; trend
+m3a<- lm(changeRelativeToOutcomeBehavior_num ~ interventionOutcome + abs(diff_interventionTestOutcomeRG), df_v6n288_users); summary(m3a) # 0.02134; sig
+m3b<- lm(changeRelativeToOutcomeBehavior_num ~ interventionOutcome_num + abs(diff_interventionTestOutcomeRG), df_v6n288_users); summary(m3b) # 0.04705; sig
+anova(m2a,m3a) # ns
+anova(m2b,m3a) # sig; first model m2b wasn't sig though
+anova(m2c,m3b) # trend
+
+
+```
+
+
+
+

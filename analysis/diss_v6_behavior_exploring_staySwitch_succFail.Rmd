@@ -14,7 +14,7 @@ library(lme4)
 library(lmerTest) # p-values on lmer
 source("summarySE.R")
 library(corrplot)
-library(plyr) # for ddply, calculating means for histograms
+#library(plyr) # for ddply, calculating means for histograms; unloaded because it messed with group_by
 library(apaTables) # for apa.cor.table
 #library(ggpubr) # for balloon plot
 library("ggalluvial") # for alluvial plot
@@ -33,7 +33,159 @@ nrow(df_v6n288_users) # 278 of 288
 
 ```{r base rate stay/switch}
 
+summary(df_v6n288_users$probStay_after_G) # mean 65%, median 77%
+summary(df_v6n288_users$probStay_after_R) # mean 74%, median 89%
 
+df_v6n288_users %>% ggplot(aes(probStay_after_G)) + geom_histogram() +
+  scale_y_continuous(limits=c(0,90))
+
+df_v6n288_users %>% ggplot(aes(probStay_after_R)) + geom_histogram() +
+  scale_y_continuous(limits=c(0,90))
+
+df_v6n288_users %>% ggplot(aes(probStay_after_G)) + geom_histogram()
+df_v6n288_users %>% ggplot(aes(probStay_after_R)) + geom_histogram()
+
+# R has more sticking power than G
+# People stick with G at a higher rate than I'd expect!
+
+summary(df_v6n288_users$assessmentStrategyChoiceGenerateCount) # mean 9, med 8
+summary(df_v6n288_users$assessmentStrategyChoiceRestudyCount) # mean 11, med 12
 
 ```
 
+```{r by item success/failure}
+
+summary(df_v6n288_users$probStay_after_G_1) # mean 88%, median 100%
+summary(df_v6n288_users$probStay_after_G_0) # mean 62%, median 70%
+
+summary(df_v6n288_users$probStay_after_R_1) # mean 75%, median 92%
+summary(df_v6n288_users$probStay_after_R_0) # mean 83%, median 100%
+
+
+df_v6n288_users %>% ggplot(aes(probStay_after_G_1)) + geom_histogram() +
+  scale_y_continuous(limits=c(0,120))
+
+df_v6n288_users %>% ggplot(aes(probStay_after_G_0)) + geom_histogram() +
+  scale_y_continuous(limits=c(0,120))
+
+df_v6n288_users %>% ggplot(aes(probStay_after_R_1)) + geom_histogram() +
+  scale_y_continuous(limits=c(0,120))
+
+df_v6n288_users %>% ggplot(aes(probStay_after_R_0)) + geom_histogram() +
+  scale_y_continuous(limits=c(0,120))
+
+
+df_v6n288_users %>% ggplot(aes(probStay_after_G_1)) + geom_histogram()
+df_v6n288_users %>% ggplot(aes(probStay_after_G_0)) + geom_histogram()
+df_v6n288_users %>% ggplot(aes(probStay_after_R_1)) + geom_histogram()
+df_v6n288_users %>% ggplot(aes(probStay_after_R_0)) + geom_histogram() 
+
+# stay after G0 is lowest
+
+summary(df_v6n288_users$howMany_G_1) # mean 3, med 1
+summary(df_v6n288_users$howMany_G_0) # mean 6, med 5
+summary(df_v6n288_users$howMany_R_1) # mean 10, med 11
+summary(df_v6n288_users$howMany_R_0) # mean 1, med 0
+
+```
+
+```{r by condition}
+
+df_v6n288_users %>% group_by(condition) %>% summarise(
+  stayG = mean(probStay_after_G, na.rm=T),
+  stayR = mean(probStay_after_R, na.rm=T)
+)
+
+summary(lm(probStay_after_G ~ condition, df_v6n288_users)) # 0.1879
+summary(lm(probStay_after_R ~ condition, df_v6n288_users)) # 0.01654
+
+summary(lm(assessmentStrategyChoiceGenerateCount ~ condition, df_v6n288_users)) # 0.01383
+summary(lm(assessmentStrategyChoiceRestudyCount ~ condition, df_v6n288_users)) # 0.01383
+
+# control 60% < expt1 65% < expt2 70% stayG
+# control 83% > expt1 71% > expt2 69% stayR
+# this mirrors the effect we'd expect the interventions to have
+
+# expt2 stay rate under G and R are the same, so the intervention brings expt2's sticking power with G up to the same level as R?
+
+df_v6n288_users %>% group_by(condition) %>% summarise(
+  stayG_1 = mean(probStay_after_G_1, na.rm=T),
+  stayG_0 = mean(probStay_after_G_0, na.rm=T),
+  stayR_1 = mean(probStay_after_R_1, na.rm=T),
+  stayR_0 = mean(probStay_after_R_0, na.rm=T)
+)
+
+summary(lm(probStay_after_G_1 ~ condition, df_v6n288_users)) # 0.5751
+summary(lm(probStay_after_G_0 ~ condition, df_v6n288_users)) # 0.1084
+summary(lm(probStay_after_R_1 ~ condition, df_v6n288_users)) # 0.0646
+summary(lm(probStay_after_R_0 ~ condition, df_v6n288_users)) # 0.3628
+
+# control has lower stayG1 than expt1/2; so they stay with G less even when succeeding
+# control < expt1 < expt2 stayG0; this mirrors the effect we'd expect the interventions to have on stayG0
+# control > expt1 > expt2 stay R1; control stays with R more than expts when succeeding
+# control > expt2 > expt1 stay R0; control stays with R most after failure, then expt2, then expt1
+# so control sticks with G least, whether success or failure, and sticks with R most
+
+# control is most likely to switch after G0, then R1, G1, R0
+# expt1 is most likely to switch after G0, then R1, R0, G1
+# expt2 is most likely to switch after G0, then R1, R0, G1
+# hm! Success/failure matters more for G than for R in predicting staying in the expt groups
+# success/failure interacts with condition in predicting stay/switch probability
+
+# across all groups, folks are more likely to stay after R0 than after R1. Why? 
+# Mabye if they get the restudy right, they think "Oh I can do a generate next"
+
+```
+
+```{r by REG prediction}
+
+
+summary(lm(probStay_after_G ~ interventionPrediction, df_v6n288_users)) # 0.07873; if predict restudy, less likely to stay after G than if predict generate
+summary(lm(probStay_after_R ~ interventionPrediction, df_v6n288_users)) # 0.9134; prediciton has no bearning on whether you stay after R
+
+summary(lm(probStay_after_G_1 ~ interventionPrediction, df_v6n288_users)) # 0.03947; if predict restudy, less likely to stay after G_1
+summary(lm(probStay_after_G_0 ~ interventionPrediction, df_v6n288_users)) # 0.1225; if predict restudy, less likely to stay after G_0
+summary(lm(probStay_after_R_1 ~ interventionPrediction, df_v6n288_users)) # 0.4141
+summary(lm(probStay_after_R_0 ~ interventionPrediction, df_v6n288_users)) # 0.5506
+
+# predictions affect your likelihood of staying after G 
+
+```
+
+```{r by REG outcome}
+
+
+summary(lm(probStay_after_G ~ interventionOutcome, df_v6n288_users)) # 0.5222
+summary(lm(probStay_after_R ~ interventionOutcome, df_v6n288_users)) # 0.1281
+
+summary(lm(probStay_after_G_1 ~ interventionOutcome, df_v6n288_users)) # 0.9295
+summary(lm(probStay_after_G_0 ~ interventionOutcome, df_v6n288_users)) # 0.5203
+summary(lm(probStay_after_R_1 ~ interventionOutcome, df_v6n288_users)) # 0.05763; if your outcome is equal or restudy, you're more likely to stay after R1
+summary(lm(probStay_after_R_0 ~ interventionOutcome, df_v6n288_users)) # 0.9675
+
+# seems that predictions are more predictive of stay/switch than outcomes
+```
+
+```{r by overall success/failure}
+
+summary(lm(probStay_after_G ~ assessmentStrategyGenerateSuccessRate, df_v6n288_users)) # 2.314e-14; more success G, more likely stay after G
+summary(lm(probStay_after_R ~ assessmentStrategyGenerateSuccessRate, df_v6n288_users)) # 1.688e-07; more success G, less likely stay after R
+
+summary(lm(probStay_after_G_1 ~ assessmentStrategyGenerateSuccessRate, df_v6n288_users)) # 0.5239
+summary(lm(probStay_after_G_0 ~ assessmentStrategyGenerateSuccessRate, df_v6n288_users)) # 1.395e-09; more success G, more likely stay after G0
+summary(lm(probStay_after_R_1 ~ assessmentStrategyGenerateSuccessRate, df_v6n288_users)) # 2.373e-08; more success G, less likely stay after R1
+summary(lm(probStay_after_R_0 ~ assessmentStrategyGenerateSuccessRate, df_v6n288_users)) # 0.6218
+
+# the more successful you are at G, the more likely you are to stay after G (G0), and the less likely you are to stay after R (R1). Success rate at G has no bearing on your stay-rate after G1 or R0
+
+
+summary(lm(probStay_after_G ~ assessmentStrategyRestudySuccessRate, df_v6n288_users)) # 0.4104
+summary(lm(probStay_after_R ~ assessmentStrategyRestudySuccessRate, df_v6n288_users)) # 0.09256; more success R, more likely stay after R
+
+summary(lm(probStay_after_G_1 ~ assessmentStrategyRestudySuccessRate, df_v6n288_users)) # 0.3241
+summary(lm(probStay_after_G_0 ~ assessmentStrategyRestudySuccessRate, df_v6n288_users)) # 0.362
+summary(lm(probStay_after_R_1 ~ assessmentStrategyRestudySuccessRate, df_v6n288_users)) # 0.7414
+summary(lm(probStay_after_R_0 ~ assessmentStrategyRestudySuccessRate, df_v6n288_users)) # 3.175e-05; more success R, more likely stay after R0
+
+# the more successful you are at R, the more likely you are to stay after R0. Success rate at R has no bearing on your stay-rate after G (G1 or G0) or R1
+```
